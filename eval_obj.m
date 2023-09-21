@@ -1,5 +1,8 @@
 function [objL2,objLp]=eval_obj(var,p)
 
+% Evaluates the objective function in terms of the weighted Frobenius L2
+% norm and the L1 norm
+
 N = var.n;
 
 e = var.E_est-var.E.*kron(var.lam,ones(2,1));

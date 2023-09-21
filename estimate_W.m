@@ -1,5 +1,7 @@
 function [W]=estimate_W(var,p)
 
+% Updates the weights of the IRLS method
+
 delta = 10^-3;
 W = zeros(var.n);
 

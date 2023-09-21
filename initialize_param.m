@@ -1,8 +1,11 @@
 function [var,data] = initialize_param(data)
 
+% Initializes all variables for the IRLS and ADMM optimization
+
 n = data.n;
 var.n = n;
 
+% var.R = data.R; % comment out if rotations are not provided
 var.X = data.A;
 var.E = var.X;
 

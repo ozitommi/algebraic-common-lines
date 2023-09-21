@@ -1,4 +1,8 @@
-function [A,A_flat] = create_A(n)
+function [A,A_flat,R] = create_A(n)
+
+% Creates a synthetic pure (unscaled) common lines matrix from n random
+% rotations. A is the common lines matrix and Aflat is a row vector of all
+% of its non-zero values. Also returns the set of rotations matrices used
 
 R = cell(1,n);
 for i = 1:n

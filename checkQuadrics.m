@@ -1,25 +1,40 @@
 function [quad1,quad2] = checkQuadrics(A)
 
+% Produces the values of the norms of the entries of A (quad1) and the
+% determinants of the submatrices of A (quad2).
+
+% The norm equations are satisfied if the two columns of quad1 are equal.
+
+% The determinant equations are satisfies if the second, fourth, and sixth 
+% columns of quad2 are equal. These columns correspond to the three columns 
+% of equalities on the Overleaf document. The first, third, fifth, and
+% seventh columns denote the column numbers from which the determinant
+% equations come from.
+
 n = size(A,2);
 
-idx_block=logical(kron(eye(n),ones(2,1)));
-A(idx_block)=0;
+idx_block = logical(kron(eye(n),ones(2,1)));
+A(idx_block) = 0;
 
+% check the norm equations
 M = sqrt(reshape(sum(reshape(A.^2,2,n^2),1),n,n));
 ind_ij = nchoosek(1:n,2);
 ind_ji = [ind_ij(:,2),ind_ij(:,1)];
 quad1 = [M(sub2ind(size(M),ind_ij(:,1),ind_ij(:,2))),M(sub2ind(size(M),ind_ji(:,1),ind_ji(:,2)))];
 
-quad2 = zeros(nchoosek(n,3),3);
-ind_ijk = nchoosek(1:n,3);
-for i = 1:nchoosek(n,3)
-    P = perms(ind_ijk(i,:));
-    P(:,3) = [];
-    P = flip(P);
-    P = [s3(P(:,1)),kron(P(:,2),[1;1])];
-    V = A(sub2ind(size(A),P(:,1),P(:,2)));
-    quad2(i,:) = [det([V(1:2,1),V(3:4,1)]),-det([V(5:6,1),V(7:8,1)]),det([V(9:10,1),V(11:12,1)])];
-end
+% check the determinant equations
+quad2 = [];
+for i = 1:(n-2)
+    for j = (i+1):(n-1)
+        for k = (j+1):n
 
+            det1 = det([A(s3(i),j),A(s3(i),k)]);
+            det2 = -det([A(s3(j),i),A(s3(j),k)]);
+            det3 = det([A(s3(k),i),A(s3(k),j)]);
+            quad2 = [quad2; j, det1, i, det2, k, det3, j];
+
+        end
+    end
+end
 
 end
