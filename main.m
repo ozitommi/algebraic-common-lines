@@ -89,6 +89,11 @@ for i = 1:n
 end
 M
 
+%% Compare the input with the output
+
+A % input
+var.E % output
+
 %% Recover rotations
 
 % [R_recover,A_recover] = recoverRotations(var);
