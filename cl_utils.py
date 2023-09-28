@@ -5,6 +5,26 @@ import matplotlib.pyplot as plt
 from scipy import ndimage as ndi
 
 
+def log_abs(array):
+    return np.log(1 + np.abs(array))
+
+
+def ft2(array):
+    return np.fft.fftshift(np.fft.fft2(array))
+
+
+def ift2(array):
+    return np.fft.ifft2(np.fft.ifftshift(array)).real
+
+
+def ftn(array):
+    return np.fft.fftshift(np.fft.fftn(array))
+
+
+def iftn(array):
+    return np.fft.ifftn(np.fft.ifftshift(array)).real
+
+
 def get_random_euler_angles(n=1):
     return np.random.uniform(0, 2*np.pi, (n, 3))
 
@@ -50,6 +70,27 @@ def sphere_mask(r_dists, radius=False):
     mask = r_dists <= radius
     
     return mask
+
+
+def fourier_downsample(array, factor=1, rescale=False):
+    """Downsample array by cropping its Fourier transform (factor 2 would give 100pix -> 50pix)"""
+    
+    assert factor >= 1, "scale factor must be greater than 1"
+    
+    shape = array.shape
+    center = [d//2 for d in shape]
+    new_shape = [int(d / factor) for d in shape]
+    
+    F = ftn(array)
+    idx = tuple([slice(center[i] - new_shape[i]//2, center[i] + new_shape[i]//2) for i in range(len(shape))])
+    F = F[idx] 
+    
+    if rescale:
+        F = F * (np.product(new_shape) / np.product(shape))
+    
+    f_downsample = iftn(F)
+    
+    return f_downsample
 
 ### =====================================================
 ### functions to compute fast common lines between pairs 
