@@ -3,7 +3,6 @@ function [W]=estimate_W(var,p)
 % Updates the weights of the IRLS method
 
 delta = 10^-3;
-% delta = 5*10^-2;
 W = zeros(var.n);
 
 for i = 1:var.n
@@ -15,8 +14,6 @@ for i = 1:var.n
         end
     end
 end
-
-% W = ones(var.n);
 
 W(~var.keep) = 0;
 W(logical(eye(size(W,1)))) = 0;

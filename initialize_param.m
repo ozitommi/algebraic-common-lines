@@ -32,6 +32,10 @@ var.ind1mat = indices1mat;
 var.ind2mat = indices2mat;
 var.missing = missing;
 
+% var.R = data.R; % comment out if rotations are not provided
+var.X = data.A;
+var.E = var.X;
+
 var.E_est = zeros(2*n,n);
 for i = 1:n
     for j = 1:n
@@ -50,6 +54,7 @@ for i = 1:n
     end
 end
 
+
 var.A = data.A;
 var.X = data.A;
 var.E = var.X;
@@ -64,6 +69,29 @@ var.lam(logical(eye(n))) = 0;
 var.Y = var.X;
 
 var.gamma = zeros(size(var.X));
+
+var.W = logical(data.keep);
+var.W = full(var.W);
+
+lam = zeros(n);
+for i = 1:n
+    for j = 1:n
+
+        lam(i,j) = sum(sum(var.E_est(s3(i),j).*var.E(s3(i),j)))/...
+            (norm(var.E(s3(i),j),'fro')^2);
+    
+    end
+end
+
+var.lam = lam;
+var.lam(logical(eye(n))) = 0;
+
+var.keep = data.keep;
+
+var.gamma = zeros(size(var.X));
+var.Y = var.X;
+var.W = var.W/norm(double(var.W),'fro');
+
 
 end
 

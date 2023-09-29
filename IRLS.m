@@ -1,14 +1,14 @@
-function [result] = IRLS(var,IR_iter1)
+function [result] = IRLS(var,IR_iter)
 
 % Performs IRLS and ADMM/alternating descent
 
 p = 1; % L1 cost function
 diffF = Inf;
 iter_irls = 1;
-T_iter1 = IR_iter1 + 1;
+T_iter = IR_iter + 1;
 var.objlp = 0;
 
-while iter_irls < T_iter1 && diffF > 10^-6
+while iter_irls < T_iter && diffF > 10^-6
 
     Wn = sum(var.W(:));
     var.tau = 0.5*Wn;
@@ -24,7 +24,7 @@ while iter_irls < T_iter1 && diffF > 10^-6
 
     var.W = estimate_W(var,p); % estimate weights for IRLS
 
-    fprintf('IRLS 1 iter %d IRLS obj L2 %.3e obj Lp(p=1) %.3e\n',iter_irls,objl2,objlp);
+    fprintf('IRLS iter %d IRLS obj L2 %.3e obj Lp(p=1) %.3e\n',iter_irls,objl2,objlp);
 
     iter_irls = iter_irls + 1;
 

@@ -12,7 +12,6 @@ lb = zeros(1,2*nchoosek(n,2));
 ub = ones(1,2*nchoosek(n,2));
 intcon = 1:2*nchoosek(n,2);
 nonlcon = [];
-% options = optimoptions('ga','TolFun',1E-10, 'TolCon',1E-10);
 [x,fval] = ga(fun,2*nchoosek(n,2),A,b,Aeq,beq,lb,ub,nonlcon,intcon);
 x(x == 0) = -1;
 fval = fval/2;

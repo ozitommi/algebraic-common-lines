@@ -13,8 +13,8 @@ function [quad1,quad2] = checkQuadrics(A)
 
 n = size(A,2);
 
-idx_block=logical(kron(eye(n),ones(2,1)));
-A(idx_block)=0;
+idx_block = logical(kron(eye(n),ones(2,1)));
+A(idx_block) = 0;
 
 % check the norm equations
 M = sqrt(reshape(sum(reshape(A.^2,2,n^2),1),n,n));

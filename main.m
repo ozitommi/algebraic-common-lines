@@ -8,8 +8,6 @@ format long;
 % n = size(A,2); % number of common lines
 % data.n = n;
 % data.keep = not(logical(eye(n))); % indicates whether there is any missing data
-% 
-% [quad1,quad2] = checkQuadrics(A);
 
 % % adds noise
 % % a = -0.1;
@@ -25,10 +23,6 @@ format long;
 %         data.E_est{i,j} = A_err(s3(i),j);
 %     end
 % end
-% 
-% A_fixed = fixSigns(A_err);
-% [~,quad2] = checkQuadrics(A);
-% sign(quad2)
 
 %% Synthetic common lines matrix initialization
 
@@ -40,10 +34,10 @@ format long;
 
 n = 5; % number of common lines
 data.n = n;
-I = eye(n);
-I(2,1) = 1;
-% data.keep = not(logical(eye(n))); % indicates whether there is any missing data
-data.keep = not(logical(I)); % indicates whether there is any missing data
+% I = eye(n);
+% I(2,1) = 1;
+data.keep = not(logical(eye(n))); % indicates whether there is any missing data
+% data.keep = not(logical(I)); % indicates whether there is any missing data
 
 [A,~,Rots] = create_A(n);
 
@@ -61,8 +55,6 @@ randlam = (b-a)*rand(n) + a;
 randlam(logical(eye(n))) = 0;
 A_err = A.*kron(sign(randlam),[1;1]);
 % A_err = A_err.*kron(sign(randlam),[1;1]);
-
-% A_err = A;
 
 data.E_est = cell(n,n); % store the 2x1 entries of the common lines matrix
 for i = 1:n
@@ -89,18 +81,16 @@ for i = 1:MAX_GA
     end
 end
 best
-% [~,quad2] = checkQuadrics(A);
-% sign(quad2)
 
 %% Optimization parameter initialization
 
-IR_iter1 = 100; % maximum number of iterations for IRLS/ADMM
+IR_iter = 100; % maximum number of iterations for IRLS/ADMM
 data.A = A_fixed;
 [var,data] = initialize_param(data);
 
 %% Run IRLS and ADMM
 
-[result] = IRLS(var,IR_iter1);
+[result] = IRLS(var,IR_iter);
 var = result.var;
 
 %% Check whether the output has rank 3
@@ -180,7 +170,6 @@ for i = 1:n
     Rec1 = [Rec1;R_recover1{i}];
     Rot = [Rot; Rots{i}];
 end
-% [U,~,V] = svd(Rec1'*Rot);
 [U,~,V] = svd(Rot'*Rec1);
 Q = U*V';
 norm(Rec1 - Rot*Q,'fro')
