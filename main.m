@@ -1,0 +1,197 @@
+
+clear all;
+format long;
+
+%% Estimated common lines matrix initialization
+
+% A = importdata("common_lines_test.mat");
+% n = size(A,2); % number of common lines
+% data.n = n;
+% data.keep = not(logical(eye(n))); % indicates whether there is any missing data
+% 
+% [quad1,quad2] = checkQuadrics(A);
+
+% % adds noise
+% % a = -0.1;
+% % b = 0.1;
+% % A_err = A + (b-a).*rand(size(A,1),size(A,2)) + a;
+% % n = size(A,2); % number of common lines
+
+% A_err = A;
+% 
+% data.E_est = cell(n,n); % store the 2x1 entries of the common lines matrix
+% for i = 1:n
+%     for j = 1:n
+%         data.E_est{i,j} = A_err(s3(i),j);
+%     end
+% end
+% 
+% A_fixed = fixSigns(A_err);
+% [~,quad2] = checkQuadrics(A);
+% sign(quad2)
+
+%% Synthetic common lines matrix initialization
+
+% A = importdata("common_lines_synthetic_n=4.mat");
+% imp = importdata("common_lines_synthetic2_n=4.mat");
+% A = imp.A;
+% Rots = imp.R;
+% n = size(A,2); % number of common lines
+
+n = 5; % number of common lines
+data.n = n;
+I = eye(n);
+I(2,1) = 1;
+% data.keep = not(logical(eye(n))); % indicates whether there is any missing data
+data.keep = not(logical(I)); % indicates whether there is any missing data
+
+[A,~,Rots] = create_A(n);
+
+% A_err = A;
+
+% % add noise
+% a = -0.001;
+% b = 0.001;
+% A_err = A + (b-a).*rand(size(A,1),size(A,2)) + a;
+
+% add random scaling
+a = -1;
+b = 1;
+randlam = (b-a)*rand(n) + a;
+randlam(logical(eye(n))) = 0;
+A_err = A.*kron(sign(randlam),[1;1]);
+% A_err = A_err.*kron(sign(randlam),[1;1]);
+
+% A_err = A;
+
+data.E_est = cell(n,n); % store the 2x1 entries of the common lines matrix
+for i = 1:n
+    for j = 1:n
+        data.E_est{i,j} = A_err(s3(i),j);
+    end
+end
+
+%% Try to fix the signs of the scaled common lines matrix
+
+MAX_GA = 50;
+best = Inf;
+
+for i = 1:MAX_GA
+    [out,x,fval] = fixSigns(A_err);
+    fval
+    if fval < best
+        best = fval;
+        A_fixed = out;
+    end
+    if fval == 0
+        A_fixed = out;
+        break;
+    end
+end
+best
+% [~,quad2] = checkQuadrics(A);
+% sign(quad2)
+
+%% Optimization parameter initialization
+
+IR_iter1 = 100; % maximum number of iterations for IRLS/ADMM
+data.A = A_fixed;
+[var,data] = initialize_param(data);
+
+%% Run IRLS and ADMM
+
+[result] = IRLS(var,IR_iter1);
+var = result.var;
+
+%% Check whether the output has rank 3
+
+[~,Sigma,~] = svd(var.E,"vector")
+
+%% Check whether the output satisfies the quadric equations
+
+[quad1,quad2] = checkQuadrics(var.E)
+
+%% Check the reconstruction error
+
+E = var.E_est;
+E_rec = kron(var.lam,ones(2,1)).*var.E;
+for i = 1:n
+    for j = 1:n
+        M(i,j) = norm(E(s3(i),j) - E_rec(s3(i),j));
+    end
+end
+M
+
+%% Fix norm equations with Sinkhorn
+
+M = sqrt(reshape(sum(reshape((var.E).^2,2,n^2),1),n,n));
+fprintf('error before %.9e\n',norm(M-M','fro'));
+
+for i = 1:10000
+
+    [L,~] = constructScaleMats(M);
+    [~,~,V] = svd(L);
+    d1 = V(:,end);
+    LM = diag(d1)*M;
+    M = norm(M,'fro')*(LM/norm(LM,'fro'));
+    LE = diag(repelem(d1,2))*(var.E);
+    var.E = norm(var.E,'fro')*(LE/norm(LE,'fro'));
+
+    [~,R] = constructScaleMats(M);
+    [~,~,V] = svd(R);
+    d2 = V(:,end);
+    MR = M*diag(d2);
+    M = norm(M,'fro')*(MR/norm(MR,'fro'));
+    ER = (var.E)*diag(d2);
+    var.E = norm(var.E,'fro')*(ER/norm(ER,'fro'));
+
+    % fprintf('error after columns %.9e\n',norm(M-M','fro'));
+
+end
+
+fprintf('error after %.9e\n',norm(M-M','fro'));
+
+[quad1,quad2] = checkQuadrics(var.E)
+[~,Sigma,~] = svd(var.E,'vector')
+
+
+%% Fix determinant equations
+
+var.A = var.E;
+[~,quad2] = checkQuadrics(var.E);
+var.quad = quad2;
+[D1,D2] = constructDetMats(var);
+[~,~,V] = svd(D1 + D2);
+scales = 1./V(:,end);
+Lambda = triu(ones(n))' - eye(n);
+Lambda(Lambda == 1) = scales;
+Lambda = Lambda + Lambda';
+E_new = kron(Lambda,ones(2,1)).*var.E;
+var.E = E_new*(norm(var.E,'fro')/norm(E_new,'fro'));
+[quad1,quad2] = checkQuadrics(var.E)
+[~,Sigma,~] = svd(var.E,'vector')
+
+%% Recover rotations
+
+[R_recover1,Q_recover1,A_recover1,R_recover2,Q_recover2,A_recover2] = recoverRotations(var);
+Rec1 = [];
+Rot = [];
+for i = 1:n
+    Rec1 = [Rec1;R_recover1{i}];
+    Rot = [Rot; Rots{i}];
+end
+% [U,~,V] = svd(Rec1'*Rot);
+[U,~,V] = svd(Rot'*Rec1);
+Q = U*V';
+norm(Rec1 - Rot*Q,'fro')
+
+Rec2 = [];
+Rot = [];
+for i = 1:n
+    Rec2 = [Rec2;R_recover2{i}];
+    Rot = [Rot; Rots{i}];
+end
+[U,~,V] = svd(Rot'*Rec2);
+Q = U*V';
+norm(Rec2 - Rot*Q,'fro')
+
