@@ -5,11 +5,9 @@ function [quad1,quad2] = checkQuadrics(A)
 
 % The norm equations are satisfied if the two columns of quad1 are equal.
 
-% The determinant equations are satisfies if the second, fourth, and sixth 
-% columns of quad2 are equal. These columns correspond to the three columns 
-% of equalities on the Overleaf document. The first, third, fifth, and
-% seventh columns denote the column numbers from which the determinant
-% equations come from.
+% The determinant equations are satisfied if the three columns of quad2 
+% are equal. These columns correspond to the three columns of equalities 
+% on the Overleaf document.
 
 n = size(A,2);
 

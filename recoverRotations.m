@@ -2,22 +2,11 @@ function [R_recover1,Q_recover1,A_recover1,R_recover2,Q_recover2,A_recover2] = r
 
 n = var.n;
 
-X = sym('X',[3,3]);
 [U,~,~] = svd(var.E);
 B = U(:,1:3);
 
-% set up least squares problem
-V = B*X*transpose(B);
-I_rep = repmat(ones(2), 1, n);
-I_cell = mat2cell(I_rep, 2, repmat(2,1,n));
-ind = not(logical(blkdiag(I_cell{:})));
-V(ind) = 0;
-
-frob = sum(sum((V - eye(2*n)).^2));
-jac = jacobian(frob,reshape(X,3^2,1));
-S = vpasolve(jac == 0,reshape(X,3^2,1)); % symbolically solve for X
-S = arrayfun(@(f) [S.(f{:})].', fieldnames(S), 'un', 0);
-S = reshape([S{:}],3,3);
+[M,b] = constructRotMats(B);
+S = reshape(lsqminnorm(M,b),3,3);
 [V,Sigma] = eig(S);
 if Sigma(3,3) < 0
     V = V*[1,0,0;0,1,0;0,0,-1];
@@ -45,27 +34,6 @@ A_recover1 = create_A2(R_recover1); % reconstruct the pure common lines matrix
 
 %%
 
-B = U(:,1:3);
-
-X = sym('X',[3,3]);
-
-% set up least squares problem
-V = B*X*transpose(B);
-I_rep = repmat(ones(2), 1, n);
-I_cell = mat2cell(I_rep, 2, repmat(2,1,n));
-ind = not(logical(blkdiag(I_cell{:})));
-V(ind) = 0;
-
-frob = sum(sum((V - eye(2*n)).^2));
-jac = jacobian(frob,reshape(X,3^2,1));
-S = vpasolve(jac == 0,reshape(X,3^2,1)); % symbolically solve for X
-S = arrayfun(@(f) [S.(f{:})].', fieldnames(S), 'un', 0);
-S = reshape([S{:}],3,3);
-[V,Sigma] = eig(S);
-if Sigma(3,3) < 0
-    V = V*[1,0,0;0,1,0;0,0,-1];
-    Sigma = Sigma*[1,0,0;0,1,0;0,0,-1];
-end
 B = -B*V*sqrt(Sigma);
 
 % recover the rotation matrices

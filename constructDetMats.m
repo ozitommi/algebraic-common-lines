@@ -1,6 +1,5 @@
 function [D1,D2] = constructDetMats(var)
 
-n = var.n;
 quad2 = var.quad;
 indices1mat = var.ind1mat;
 indices2mat = var.ind2mat;

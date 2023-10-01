@@ -32,10 +32,10 @@ format long;
 % Rots = imp.R;
 % n = size(A,2); % number of common lines
 
-n = 5; % number of common lines
+n = 20; % number of common lines
 data.n = n;
 % I = eye(n);
-% I(2,1) = 1;
+% I(2,1) = 1;for
 data.keep = not(logical(eye(n))); % indicates whether there is any missing data
 % data.keep = not(logical(I)); % indicates whether there is any missing data
 
@@ -65,26 +65,11 @@ end
 
 %% Try to fix the signs of the scaled common lines matrix
 
-MAX_GA = 50;
-best = Inf;
-
-for i = 1:MAX_GA
-    [out,x,fval] = fixSigns(A_err);
-    fval
-    if fval < best
-        best = fval;
-        A_fixed = out;
-    end
-    if fval == 0
-        A_fixed = out;
-        break;
-    end
-end
-best
+A_fixed = signFlip(A_err);
 
 %% Optimization parameter initialization
 
-IR_iter = 100; % maximum number of iterations for IRLS/ADMM
+IR_iter = 20; % maximum number of iterations for IRLS/ADMM
 data.A = A_fixed;
 [var,data] = initialize_param(data);
 
@@ -95,11 +80,11 @@ var = result.var;
 
 %% Check whether the output has rank 3
 
-[~,Sigma,~] = svd(var.E,"vector")
+[~,Sigma,~] = svd(var.E,"vector");
 
 %% Check whether the output satisfies the quadric equations
 
-[quad1,quad2] = checkQuadrics(var.E)
+[quad1,quad2] = checkQuadrics(var.E);
 
 %% Check the reconstruction error
 
@@ -110,14 +95,15 @@ for i = 1:n
         M(i,j) = norm(E(s3(i),j) - E_rec(s3(i),j));
     end
 end
-M
+M;
 
 %% Fix norm equations with Sinkhorn
 
 M = sqrt(reshape(sum(reshape((var.E).^2,2,n^2),1),n,n));
 fprintf('error before %.9e\n',norm(M-M','fro'));
+MAX_SH = 1000;
 
-for i = 1:10000
+for i = 1:MAX_SH
 
     [L,~] = constructScaleMats(M);
     [~,~,V] = svd(L);
@@ -135,14 +121,12 @@ for i = 1:10000
     ER = (var.E)*diag(d2);
     var.E = norm(var.E,'fro')*(ER/norm(ER,'fro'));
 
-    % fprintf('error after columns %.9e\n',norm(M-M','fro'));
-
 end
 
 fprintf('error after %.9e\n',norm(M-M','fro'));
 
-[quad1,quad2] = checkQuadrics(var.E)
-[~,Sigma,~] = svd(var.E,'vector')
+[quad1,quad2] = checkQuadrics(var.E);
+[~,Sigma,~] = svd(var.E,'vector');
 
 
 %% Fix determinant equations
@@ -158,8 +142,8 @@ Lambda(Lambda == 1) = scales;
 Lambda = Lambda + Lambda';
 E_new = kron(Lambda,ones(2,1)).*var.E;
 var.E = E_new*(norm(var.E,'fro')/norm(E_new,'fro'));
-[quad1,quad2] = checkQuadrics(var.E)
-[~,Sigma,~] = svd(var.E,'vector')
+[quad1,quad2] = checkQuadrics(var.E);
+[~,Sigma,~] = svd(var.E,'vector');
 
 %% Recover rotations
 
