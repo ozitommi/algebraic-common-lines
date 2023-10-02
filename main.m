@@ -65,11 +65,19 @@ end
 
 %% Try to fix the signs of the scaled common lines matrix
 
+[~,quad2] = checkQuadrics(A_err);
+sign(quad2)
 A_fixed = signFlip(A_err);
+[~,quad2] = checkQuadrics(A_fixed);
+sign(quad2)
+
+
+[A_out,prob] = runADMM(A_err);
+
 
 %% Optimization parameter initialization
 
-IR_iter = 20; % maximum number of iterations for IRLS/ADMM
+IR_iter = 10; % maximum number of iterations for IRLS/ADMM
 data.A = A_fixed;
 [var,data] = initialize_param(data);
 
@@ -144,6 +152,8 @@ E_new = kron(Lambda,ones(2,1)).*var.E;
 var.E = E_new*(norm(var.E,'fro')/norm(E_new,'fro'));
 [quad1,quad2] = checkQuadrics(var.E);
 [~,Sigma,~] = svd(var.E,'vector');
+sum((quad1(:,1) - quad1(:,2)).^2)
+sum((quad2(:,1) - quad2(:,2)).^2) + sum((quad2(:,2) - quad2(:,3)).^2)
 
 %% Recover rotations
 
