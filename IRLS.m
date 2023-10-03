@@ -24,7 +24,7 @@ while iter_irls < T_iter && diffF > 10^-6
 
     var.W = estimate_W(var,p); % estimate weights for IRLS
 
-    fprintf('IRLS iter %d IRLS obj L2 %.3e obj Lp(p=1) %.3e\n',iter_irls,objl2,objlp);
+    % fprintf('IRLS iter %d IRLS obj L2 %.3e obj Lp(p=1) %.3e\n',iter_irls,objl2,objlp);
 
     iter_irls = iter_irls + 1;
 

@@ -15,32 +15,4 @@ R = L;
 L = L + L' + diag(diagonalL);
 R = R + R' + diag(diagonalR);
 
-% L = zeros(n);
-% for i = 1:n
-%     for j = i:n
-%         if i == j
-%             ind = 1:n;
-%             ind(i) = [];
-%             L(i,j) = (1/2)*2*sum(M(i,ind).^2);
-%         else
-%             L(i,j) = -2*M(i,j)*M(j,i);
-%         end
-%     end
-% end
-% L = (1/2)*(L + L')
-% 
-% R = zeros(n);
-% for i = 1:n
-%     for j = i:n
-%         if i == j
-%             ind = 1:n;
-%             ind(i) = [];
-%             R(i,j) = (1/2)*2*sum(M(ind,i).^2);
-%         else
-%             R(i,j) = -2*M(i,j)*M(j,i);
-%         end
-%     end
-% end
-% R = (1/2)*(R + R')
-
 end

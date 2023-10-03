@@ -1,5 +1,7 @@
 function [M,b] = constructRotMats(B)
 
+% Creates the linear least squares matrix for the rotation recovery problem
+
 n = size(B,1)/2;
 
 b1 = B(:,1);

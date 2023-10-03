@@ -1,4 +1,7 @@
-function [A_fixed] = signFlip(A_err)
+function [A_fixed,vld] = fixSigns(A_err)
+
+% Finds sign flips to the entries of the input common lines matrix so that
+% the signs of the determinant equations all match
 
 [~,quad2] = checkQuadrics(A_err);
 
@@ -43,18 +46,29 @@ b = reshape(sign(quad2)',3*m,[]);
 b(b == 1) = 0;
 b(b == -1) = 1;
 
-x = gflineq(A,b,2);
-sol = x(m+1:end);
+warning('off','comm:gflineq:NoSolution');
+[x,vld] = gflineq(A,b,2);
 
-Lambda = triu(ones(n))' - eye(n);
-Lambda = Lambda + Lambda';
-Lambda = reshape(Lambda,n^2,1);
-Lambda(Lambda == 1) = sol;
-Lambda = reshape(Lambda,n,n)';
+if vld == 1
 
-Lambda(Lambda == 1) = -1;
-Lambda(Lambda == 0) = 1;
+    sol = x(m+1:end);
 
-A_fixed = kron(Lambda,[1;1]).*A_err;
+    Lambda = triu(ones(n))' - eye(n);
+    Lambda = Lambda + Lambda';
+    Lambda = reshape(Lambda,n^2,1);
+    Lambda(Lambda == 1) = sol;
+    Lambda = reshape(Lambda,n,n)';
+
+    Lambda(Lambda == 1) = -1;
+    Lambda(Lambda == 0) = 1;
+
+    A_fixed = kron(Lambda,[1;1]).*A_err;
+
+else
+
+    A_fixed = zeros(2*n,n);
+    return;
+
+end
 
 end

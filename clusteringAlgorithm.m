@@ -2,133 +2,114 @@
 clear all;
 format long;
 
-n = 3;
+%% Clustering algorithm
 
-% create pure common lines matrices
-[A,~,RotsA] = create_A(n);
-[B,~,RotsB] = create_A(n);
+tic
 
-% create partial common lines matrix
-C = (1 - (-1))*rand(2*2*n,2*n) + (-1);
-idx_block = logical(kron(eye(2*n),ones(2,1)));
-C(idx_block) = 0;
+% the number of clusters
+m = 8; 
+% the number of common lines
+n = 15; % must be divisible by 3!
 
-% fill in the correct entries of C
-C(s3(1),4) = A(s3(2),1);
-C(s3(1),6) = A(s3(2),3);
-C(s3(2),3) = B(s3(3),1);
-C(s3(2),5) = B(s3(3),2);
-C(s3(3),2) = B(s3(1),3);
-C(s3(3),5) = B(s3(1),2);
-C(s3(4),1) = A(s3(1),2);
-C(s3(4),6) = A(s3(1),3);
-C(s3(5),2) = B(s3(2),3);
-C(s3(5),3) = B(s3(2),1);
-C(s3(6),1) = A(s3(3),2);
-C(s3(6),4) = A(s3(3),1);
+[C,cluster_labels] = heterogeneousCommonLines(m,n);
+% add random scaling
+a = -1;
+b = 1;
+randlam = (b-a)*rand(m*n) + a;
+randlam(logical(eye(m*n))) = 0;
+C = C.*kron(sign(randlam),[1;1]);
 
-% the true clusters
-trueA = [1;4;6];
-trueB = [2;3;5];
-
-% check that pulling the true clusters out gives us back the pure common
-% lines matrices
-rowsA = zeros(2*2*n,2*n);
-rowsB = zeros(2*2*n,2*n);
-colsA = zeros(2*2*n,2*n);
-colsB = zeros(2*2*n,2*n);
-rowsA(s3(trueA),:) = 1;
-rowsB(s3(trueB),:) = 1;
-colsA(:,trueA) = 1;
-colsB(:,trueB) = 1;
-indA = logical(rowsA) & logical(colsA);
-indB = logical(rowsB) & logical(colsB);
-A_take = reshape(C(indA),2*n,n); % it doesn't matter if it doesn't exactly match A, it will still satisfy the constraints
-B_take = reshape(C(indB),2*n,n);
-[quad1,quad2] = checkQuadrics(A_take);
-[quad1,quad2] = checkQuadrics(B_take);
-[~,fvalA] = runADMM(A_take);
-[~,fvalB] = runADMM(B_take);
-fvalA
-fvalB
-
-%% Clustering algorithm for toy problem
-
-clusters = cell(1,2);
+% construct R^(1)
+R1 = {};
 p = size(C,2);
-x0 = randperm(p);
-clusters{1} = x0(1:3);
-clusters{2} = x0(4:6);
-thresh = 10^-10;
+ind_rem = 1:p;
+thresh = 10^-6;
+success = 1;
+while ~isempty(ind_rem)
 
-rand_inds = sort(randperm(2));
-rand_inds = rand_inds(1:2);
-clusterA = clusters{rand_inds(1)};
-clusterB = clusters{rand_inds(2)};
-rowsA = zeros(size(C,1),size(C,2));
-rowsB = zeros(size(C,1),size(C,2));
-colsA = zeros(size(C,1),size(C,2));
-colsB = zeros(size(C,1),size(C,2));
-rowsA(s3(clusterA),:) = 1;
-rowsB(s3(clusterB),:) = 1;
-colsA(:,clusterA) = 1;
-colsB(:,clusterB) = 1;
-indA = logical(rowsA) & logical(colsA);
-indB = logical(rowsB) & logical(colsB);
-A_take = reshape(C(indA),2*n,n);
-B_take = reshape(C(indB),2*n,n);
-% [quad1,quad2] = checkQuadrics(A_take2);
-% [quad1,quad2] = checkQuadrics(B_take2);
-[~,fvalA] = runADMM(A_take);
-[~,fvalB] = runADMM(B_take);
+    rand3inds = ind_rem(randperm(length(ind_rem)));
+    rand3inds = rand3inds(1:3);
+    rowsC = zeros(m*2*n,m*n);
+    colsC = zeros(m*2*n,m*n);
+    rowsC(s3(rand3inds),:) = 1;
+    colsC(:,rand3inds) = 1;
+    indC = logical(rowsC) & logical(colsC);
+    zero_diag = kron(ones(m*n) - diag(diag(ones(m*n))),[1;1]);
+    indC = indC & logical(zero_diag);
+    D = C';
+    cluster = reshape(D(indC'),2,2*3)';
 
-while (fvalA > thresh) && (fvalB > thresh)
-
-    rand_inds = sort(randperm(2));
-    rand_inds = rand_inds(1:2);
-    clusterA = clusters{rand_inds(1)};
-    clusterB = clusters{rand_inds(2)};
-    rowsA = zeros(size(C,1),size(C,2));
-    rowsB = zeros(size(C,1),size(C,2));
-    colsA = zeros(size(C,1),size(C,2));
-    colsB = zeros(size(C,1),size(C,2));
-    rowsA(s3(clusterA),:) = 1;
-    rowsB(s3(clusterB),:) = 1;
-    colsA(:,clusterA) = 1;
-    colsB(:,clusterB) = 1;
-    indA = logical(rowsA) & logical(colsA);
-    indB = logical(rowsB) & logical(colsB);
-    A_take = reshape(C(indA),2*n,n);
-    B_take = reshape(C(indB),2*n,n);
-    % [quad1,quad2] = checkQuadrics(A_take2);
-    % [quad1,quad2] = checkQuadrics(B_take2);
-    [~,fvalA] = runADMM(A_take);
-    [~,fvalB] = runADMM(B_take);
-    fvalA
-    fvalB
-
-    if (fvalA > thresh) && (fvalB > thresh)
-
-        swapA = clusterA(randi(length(clusterA)));
-        swapB = clusterB(randi(length(clusterB)));
-        clusterA(clusterA == swapA) = [];
-        clusterB(clusterB == swapB) = [];
-        clusterA = [clusterA, swapB];
-        clusterB = [clusterB, swapA];
-        clusters{rand_inds(1)} = clusterA;
-        clusters{rand_inds(2)} = clusterB;
-
+    clusterCM = kron(ones(3) - diag(diag(ones(3))),[1;1])';
+    clusterCM(clusterCM == 1) = cluster';
+    clusterCM = clusterCM';
+    [A_out,fval] = runADMM(clusterCM);
+    if fval < thresh
+        R1(end+1) = {rand3inds};
+        ind_rem = setdiff(ind_rem,rand3inds);
+        fprintf('Clutser %d: consistent triple found! \n',success);
+        success = success + 1;
     end
-
 end
 
 
+% merge the clusters together
+R = R1;
+R_old = length(R1) + 1;
+R_new = length(R1);
+while R_new < R_old
 
+    ind_R = 1;
+    while ind_R < length(R)
 
+        clusterA = R{ind_R};
+        ind_clust = 1;
+        exit = 0;
+        while ind_clust < length(R)-ind_R+1 && ~exit
+            clusterB = R{ind_R + ind_clust};
+            indA = randperm(length(clusterA));
+            indA = indA([1,2]);
+            indB = randperm(length(clusterB));
+            indB = indB([1,2]);
+            clusterAB = [clusterA(indA), clusterB(indB)];
+            k = length(clusterAB);
+            fprintf('Attempting to merge cluster of size %d \n',length([clusterA, clusterB]));
+            
+            rowsC = zeros(m*2*n,m*n);
+            colsC = zeros(m*2*n,m*n);
+            rowsC(s3(clusterAB),:) = 1;
+            colsC(:,clusterAB) = 1;
+            indC = logical(rowsC) & logical(colsC);
+            zero_diag = kron(ones(m*n) - diag(diag(ones(m*n))),[1;1]);
+            indC = indC & logical(zero_diag);
+            D = C';
+            cluster = reshape(D(indC'),k-1,2*k)';
 
+            clusterCM = kron(ones(k) - diag(diag(ones(k))),[1;1])';
+            clusterCM(clusterCM == 1) = cluster';
+            clusterCM = clusterCM';
+            [A_out,fval,vld] = runADMM(clusterCM);
+            if vld == 1
+                if fval < thresh
+                    fprintf('SUCCESS! Merged cluster \n');
+                    R{ind_R} = [clusterA, clusterB];
+                    R(ind_R + ind_clust) = [];
+                    exit = 1;
+                else
+                    fprintf('Failed to merge cluster \n');
+                end
+            else
+                fprintf('Failed to merge cluster \n');
+            end
+            ind_clust = ind_clust + 1;
 
+        end
+        ind_R = ind_R + 1;
 
+    end
 
+    R_old = R_new;
+    R_new = length(R);
 
+end
 
-
+toc

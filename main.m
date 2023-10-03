@@ -32,7 +32,7 @@ format long;
 % Rots = imp.R;
 % n = size(A,2); % number of common lines
 
-n = 20; % number of common lines
+n = 5; % number of common lines
 data.n = n;
 % I = eye(n);
 % I(2,1) = 1;for
@@ -55,6 +55,7 @@ randlam = (b-a)*rand(n) + a;
 randlam(logical(eye(n))) = 0;
 A_err = A.*kron(sign(randlam),[1;1]);
 % A_err = A_err.*kron(sign(randlam),[1;1]);
+% A_err = rand(2*n,n).*kron(sign(randlam),[1;1]);
 
 data.E_est = cell(n,n); % store the 2x1 entries of the common lines matrix
 for i = 1:n
@@ -67,13 +68,9 @@ end
 
 [~,quad2] = checkQuadrics(A_err);
 sign(quad2)
-A_fixed = signFlip(A_err);
+A_fixed = fixSigns(A_err);
 [~,quad2] = checkQuadrics(A_fixed);
 sign(quad2)
-
-
-[A_out,prob] = runADMM(A_err);
-
 
 %% Optimization parameter initialization
 

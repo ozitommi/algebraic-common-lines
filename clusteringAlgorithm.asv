@@ -5,8 +5,20 @@ format long;
 n = 3;
 
 % create pure common lines matrices
-[A,~,RotsA] = create_A(n);
-[B,~,RotsB] = create_A(n);
+[A_true,~,RotsA] = create_A(n);
+[B_true,~,RotsB] = create_A(n);
+% add random scaling
+a = -1;
+b = 1;
+randlam = (b-a)*rand(n) + a;
+randlam(logical(eye(n))) = 0;
+A = A_true.*kron(sign(randlam),[1;1]);
+% add random scaling
+a = -1;
+b = 1;
+randlam = (b-a)*rand(n) + a;
+randlam(logical(eye(n))) = 0;
+B = B_true.*kron(sign(randlam),[1;1]);
 
 % create partial common lines matrix
 C = (1 - (-1))*rand(2*2*n,2*n) + (-1);
@@ -30,6 +42,8 @@ C(s3(6),4) = A(s3(3),1);
 % the true clusters
 trueA = [1;4;6];
 trueB = [2;3;5];
+% trueA = [4;1;6];
+% trueB = [3;5;2];
 
 % check that pulling the true clusters out gives us back the pure common
 % lines matrices
@@ -45,21 +59,210 @@ indA = logical(rowsA) & logical(colsA);
 indB = logical(rowsB) & logical(colsB);
 A_take = reshape(C(indA),2*n,n); % it doesn't matter if it doesn't exactly match A, it will still satisfy the constraints
 B_take = reshape(C(indB),2*n,n);
-% [quad1,quad2] = checkQuadrics(A_take)
-% [quad1,quad2] = checkQuadrics(B_take)
+% [quad1,quad2] = checkQuadrics(A_take);
+% [quad1,quad2] = checkQuadrics(B_take);
+% [~,fvalA] = runADMM(A_take);
+% [~,fvalB] = runADMM(B_take);
+% fvalA
+% fvalB
+
+
+
+
+
+
+
+%% Clustering algorithm for toy problem
+
+
+tic
+
+
+m = 5;
+n = 30; % must be divisible by 3!
+
+[C,cluster_labels] = heterogeneousCommonLines(m,n);
+% add random scaling
+a = -1;
+b = 1;
+randlam = (b-a)*rand(m*n) + a;
+randlam(logical(eye(m*n))) = 0;
+C = C.*kron(sign(randlam),[1;1]);
+
+R1 = {};
+p = size(C,2);
+ind_rem = 1:p;
+thresh = 10^-6;
+
+while ~isempty(ind_rem)
+
+    rand3inds = ind_rem(randperm(length(ind_rem)));
+    rand3inds = rand3inds(1:3);
+    rowsC = zeros(m*2*n,m*n);
+    colsC = zeros(m*2*n,m*n);
+    rowsC(s3(rand3inds),:) = 1;
+    colsC(:,rand3inds) = 1;
+    indC = logical(rowsC) & logical(colsC);
+    zero_diag = kron(ones(m*n) - diag(diag(ones(m*n))),[1;1]);
+    indC = indC & logical(zero_diag);
+    D = C';
+    cluster = reshape(D(indC'),2,2*3)';
+
+    clusterCM = kron(ones(3) - diag(diag(ones(3))),[1;1])';
+    clusterCM(clusterCM == 1) = cluster';
+    clusterCM = clusterCM';
+    [A_out,fval] = runADMM(clusterCM);
+    % [quad1,quad2] = checkQuadrics(A_out);
+    if fval < thresh
+        R1(end+1) = {rand3inds};
+        ind_rem = setdiff(ind_rem,rand3inds);
+        fprintf('Phase 1: Cluster of size 3 found! \n');
+    end
+
+    % clusterCM = kron(ones(3) - diag(diag(ones(3))),[1;1])';
+    % clusterCM(clusterCM == 1) = cluster';
+    % clusterCM = clusterCM';
+
+    % exit = 0;
+    % iter = 1;
+    % % ind_perm = flip(perms(1:3));
+    % ind_perm = perms(1:3);
+    % while iter <= 6 && ~exit
+    % 
+    % 
+    % % clusterCM
+    % % cluster_perm = clusterCM(s3(ind_perm(iter,:))',ind_perm(iter,:)')
+    % % cluster_perm = clusterCM(s3(ind_perm(iter,:))',:);
+    % cluster_perm = cluster(s3(ind_perm(iter,:))',:);
+    % 
+    % 
+    % 
+    %     clusterCM = kron(ones(3) - diag(diag(ones(3))),[1;1])';
+    %     clusterCM(clusterCM == 1) = cluster_perm';
+    %     clusterCM = clusterCM';
+    %     [A_out,fval] = runADMM(clusterCM)
+    %     [quad1,quad2] = checkQuadrics(A_out)
+    %     quad1 = checkNorms(A_out);
+    %     if fval < thresh
+    %         R1(end+1) = {rand3inds};
+    %         ind_rem = setdiff(ind_rem,rand3inds);
+    %         exit = 1;
+    %     end
+    %     iter = iter + 1;
+    % end
+
+end
+
+R = R1;
+R_old = length(R1) + 1;
+R_new = length(R1);
+while R_new < R_old
+
+    ind_R = 1;
+    while ind_R < length(R)
+
+        clusterA = R{ind_R};
+        ind_clust = 1;
+        exit = 0;
+        while ind_clust < length(R)-ind_R+1 && ~exit
+            clusterB = R{ind_R + ind_clust};
+            % clusterAB = [clusterA, clusterB];
+            clusterAB = [clusterA(randi(2,length(clusterA))), clusterB(1)];
+            k = length(clusterAB);
+            fprintf('Phase 2: Attempting to merge cluster of size %d \n',length([clusterA, clusterB]));
+            
+
+            rowsC = zeros(m*2*n,m*n);
+            colsC = zeros(m*2*n,m*n);
+            rowsC(s3(clusterAB),:) = 1;
+            colsC(:,clusterAB) = 1;
+            indC = logical(rowsC) & logical(colsC);
+            zero_diag = kron(ones(m*n) - diag(diag(ones(m*n))),[1;1]);
+            indC = indC & logical(zero_diag);
+            D = C';
+            cluster = reshape(D(indC'),k-1,2*k)';
+
+            clusterCM = kron(ones(k) - diag(diag(ones(k))),[1;1])';
+            clusterCM(clusterCM == 1) = cluster';
+            clusterCM = clusterCM';
+            [A_out,fval,vld] = runADMM(clusterCM);
+            if vld == 1
+                fprintf('Phase 2: Merged cluster of size %d!\n',length([clusterA, clusterB]));
+                % [quad1,quad2] = checkQuadrics(A_out);
+                if fval < thresh
+                    % R{ind_R} = clusterAB;
+                    R{ind_R} = [clusterA, clusterB];
+                    R(ind_R + ind_clust) = [];
+                    exit = 1;
+                end
+            else
+                fprintf('Phase 2: Failed to merge cluster \n');
+            end
+            ind_clust = ind_clust + 1;
+
+        end
+        ind_R = ind_R + 1;
+
+    end
+
+    R_old = R_new;
+    R_new = length(R);
+
+end
+
+toc
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+% check that pulling the true clusters out gives us back the pure common
+% lines matrices
+rowsA = zeros(m*2*n,m*n);
+rowsB = zeros(m*2*n,m*n);
+colsA = zeros(m*2*n,m*n);
+colsB = zeros(m*2*n,m*n);
+rowsA(s3(trueA),:) = 1;
+rowsB(s3(trueB),:) = 1;
+colsA(:,trueA) = 1;
+colsB(:,trueB) = 1;
+indA = logical(rowsA) & logical(colsA);
+indB = logical(rowsB) & logical(colsB);
+A_take = reshape(C(indA),2*n,n); % WRONG it doesn't matter if it doesn't exactly match A, it will still satisfy the constraints
+B_take = reshape(C(indB),2*n,n);
+[quad1,quad2] = checkQuadrics(A_take)
+[quad1,quad2] = checkQuadrics(B_take)
 [~,fvalA] = runADMM(A_take);
 [~,fvalB] = runADMM(B_take);
 fvalA
 fvalB
 
-%% Clustering algorithm for toy problem
+
 
 clusters = cell(1,2);
 p = size(C,2);
 x0 = randperm(p);
 clusters{1} = x0(1:3);
 clusters{2} = x0(4:6);
-thresh = 10^-10;
+
 
 rand_inds = sort(randperm(2));
 rand_inds = rand_inds(1:2);
@@ -82,6 +285,15 @@ B_take = reshape(C(indB),2*n,n);
 [~,fvalA] = runADMM(A_take);
 [~,fvalB] = runADMM(B_take);
 
+
+
+
+
+
+
+
+
+
 while (fvalA > thresh) && (fvalB > thresh)
 
     rand_inds = sort(randperm(2));
@@ -100,12 +312,17 @@ while (fvalA > thresh) && (fvalB > thresh)
     indB = logical(rowsB) & logical(colsB);
     A_take = reshape(C(indA),2*n,n);
     B_take = reshape(C(indB),2*n,n);
-    % [quad1,quad2] = checkQuadrics(A_take2);
-    % [quad1,quad2] = checkQuadrics(B_take2);
-    [~,fvalA] = runADMM(A_take);
-    [~,fvalB] = runADMM(B_take);
+    quad1 = checkNorms(A_take);
+    quad1 = checkNorms(B_take);
+    [A_out,fvalA] = runADMM(A_take);
+    [B_out,fvalB] = runADMM(B_take);
+    quad1 = checkNorms(A_out);
+    quad1 = checkNorms(B_out);
     fvalA
     fvalB
+    abs(quad1(:,1) - quad1(:,2))/sum(abs(quad1(:,1) - quad1(:,2)));
+    % clusterB
+    % trueB
 
     if (fvalA > thresh) && (fvalB > thresh)
 
@@ -113,8 +330,8 @@ while (fvalA > thresh) && (fvalB > thresh)
         swapB = clusterB(randi(length(clusterB)));
         clusterA(clusterA == swapA) = [];
         clusterB(clusterB == swapB) = [];
-        clusterA = [clusterA, swapB];
-        clusterB = [clusterB, swapA];
+        clusterA = sort([clusterA, swapB])
+        clusterB = sort([clusterB, swapA])
         clusters{rand_inds(1)} = clusterA;
         clusters{rand_inds(2)} = clusterB;
 
@@ -126,6 +343,10 @@ end
 
 
 
+% TODO:
+% Implement deterministic index swapping based on norm violation
+% Later: implement probabilistic version
+% Write code to generate test heterogeneous common lines test matrices
 
 
 
