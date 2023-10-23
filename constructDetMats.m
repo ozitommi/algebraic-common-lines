@@ -1,32 +1,33 @@
-function [D1,D2] = constructDetMats(var)
+function [D1_mu,D2_mu,D1_tau,D2_tau] = constructDetMats(var)
 
 quad2 = var.quad;
-indices1mat = var.ind1mat;
-indices2mat = var.ind2mat;
-missing = var.missing;
-m = size(indices1mat,2);
+quad2_sqrt = sign(quad2).*sqrt(abs(quad2));
+missing_mu = var.missing_mu;
+missing_tau1 = var.missing_tau1;
+missing_tau2 = var.missing_tau2;
+n = var.n;
+p = size(quad2,1);
 
 %% Construct the Jacobian matrices for the two sets of determinant equations
 
+%% jac1 mu
+
 % diagonal elements
-R = repelem(diag(double(indices1mat)),size(quad2,1),2);
-M = double(repmat(missing(:,[1,2]),m,1));
-col = repmat(quad2(:,[1,2]),m,1);
+R = repelem((1:n)',p,2);
+M = double(repmat(missing_mu(:,[1,2]),n,1));
+col = repmat(quad2_sqrt(:,[1,2]),n,1);
 col(not(M == R)) = 0;
-diagonal = (1/2)*sum((reshape(sum(col,2),size(quad2,1),m)).^2,1);
+diagonal = (1/2)*sum((reshape(sum(col,2),p,n)).^2,1);
 % off-diagonal elements
-num = size(quad2,1)*((m-1):-1:1);
-indices1 = diag(double(indices1mat));
-indices1(end) = [];
-cross = repelem(indices1,[num]);
-B = triu(double(indices1mat),1)';
-u = tril(true(size(B)),-1);
-v = B(u);
-M1 = double(repmat(missing(:,1),size(v,1),1));
-M2 = double(repmat(missing(:,2),size(v,1),1));
-col = repmat(quad2(:,[1,2]),size(v,1),1);
-v = repelem(v,size(quad2,1));
-M = [M1,M2,cross,v];
+B = triu(ones(n),1)';
+[row_ind,col_ind] = ind2sub(size(B),find(B));
+r = length(row_ind);
+row_ind = repelem(row_ind,p);
+col_ind = repelem(col_ind,p);
+M1 = double(repmat(missing_mu(:,1),r,1));
+M2 = double(repmat(missing_mu(:,2),r,1));
+col = repmat(quad2_sqrt(:,[1,2]),r,1);
+M = [M1,M2,row_ind,col_ind];
 miss1_ii = M(:,1) == M(:,3);
 miss2_ii = M(:,2) == M(:,3);
 miss1_ij = M(:,1) == M(:,4);
@@ -34,34 +35,31 @@ miss2_ij = M(:,2) == M(:,4);
 IND = (miss1_ii | miss2_ii) & (miss1_ij | miss2_ij);
 col([not(IND),not(IND)]) = 0;
 col = -prod(col,2);
-col = sum(reshape(col,size(quad2,1),size(col,1)/size(quad2,1)),1);
+col = sum(reshape(col,p,size(col,1)/p),1);
 
-D1_small = triu(ones(m))' - eye(m);
-D1_small(D1_small == 1) = col;
-D1_small = D1_small + diag(diagonal);
-D1_small = D1_small + D1_small';
-D1 = zeros(m+1);
-D1(2:m+1,2:m+1) = D1_small;
+D1_mu = triu(ones(n))' - eye(n);
+D1_mu(D1_mu == 1) = col;
+D1_mu = D1_mu + diag(diagonal);
+D1_mu = D1_mu + D1_mu';
+
+%% jac2 mu
 
 % diagonal elements
-R = repelem(diag(double(indices2mat)),size(quad2,1),2);
-M = double(repmat(missing(:,[2,3]),m,1));
-col = repmat(quad2(:,[2,3]),m,1);
+R = repelem((1:n)',p,2);
+M = double(repmat(missing_mu(:,[2,3]),n,1));
+col = repmat(quad2_sqrt(:,[2,3]),n,1);
 col(not(M == R)) = 0;
-diagonal = (1/2)*sum((reshape(sum(col,2),size(quad2,1),m)).^2,1);
+diagonal = (1/2)*sum((reshape(sum(col,2),p,n)).^2,1);
 % off-diagonal elements
-num = size(quad2,1)*((m-1):-1:1);
-indices2 = diag(double(indices2mat));
-indices2(end) = [];
-cross = repelem(indices2,[num]);
-B = triu(double(indices2mat),1)';
-u = tril(true(size(B)),-1);
-v = B(u);
-M1 = double(repmat(missing(:,2),size(v,1),1));
-M2 = double(repmat(missing(:,3),size(v,1),1));
-col = repmat(quad2(:,[2,3]),size(v,1),1);
-v = repelem(v,size(quad2,1));
-M = [M1,M2,cross,v];
+B = triu(ones(n),1)';
+[row_ind,col_ind] = ind2sub(size(B),find(B));
+r = length(row_ind);
+row_ind = repelem(row_ind,p);
+col_ind = repelem(col_ind,p);
+M1 = double(repmat(missing_mu(:,2),r,1));
+M2 = double(repmat(missing_mu(:,3),r,1));
+col = repmat(quad2_sqrt(:,[2,3]),r,1);
+M = [M1,M2,row_ind,col_ind];
 miss1_ii = M(:,1) == M(:,3);
 miss2_ii = M(:,2) == M(:,3);
 miss1_ij = M(:,1) == M(:,4);
@@ -69,13 +67,75 @@ miss2_ij = M(:,2) == M(:,4);
 IND = (miss1_ii | miss2_ii) & (miss1_ij | miss2_ij);
 col([not(IND),not(IND)]) = 0;
 col = -prod(col,2);
-col = sum(reshape(col,size(quad2,1),size(col,1)/size(quad2,1)),1);
+col = sum(reshape(col,p,size(col,1)/p),1);
 
-D2_small = triu(ones(m))' - eye(m);
-D2_small(D2_small == 1) = col;
-D2_small = D2_small + diag(diagonal);
-D2_small = D2_small + D2_small';
-D2 = zeros(m+1);
-D2(1:m,1:m) = D2_small;
+D2_mu = triu(ones(n))' - eye(n);
+D2_mu(D2_mu == 1) = col;
+D2_mu = D2_mu + diag(diagonal);
+D2_mu = D2_mu + D2_mu';
+
+%% jac1 tau
+
+% diagonal elements
+R = repelem((1:n)',p,2);
+M = double(repmat(missing_tau1(:,[1,2]),n,1));
+col = repmat(quad2(:,[1,2]),n,1);
+col(not(M == R)) = 0;
+diagonal = (1/2)*sum((reshape(sum(col,2),p,n)).^2,1);
+% off-diagonal elements
+B = triu(ones(n),1)';
+[row_ind,col_ind] = ind2sub(size(B),find(B));
+r = length(row_ind);
+row_ind = repelem(row_ind,p);
+col_ind = repelem(col_ind,p);
+M1 = double(repmat(missing_tau1(:,1),r,1));
+M2 = double(repmat(missing_tau1(:,2),r,1));
+col = repmat(quad2(:,[1,2]),r,1);
+M = [M1,M2,row_ind,col_ind];
+miss1_ii = M(:,1) == M(:,3);
+miss2_ii = M(:,2) == M(:,3);
+miss1_ij = M(:,1) == M(:,4);
+miss2_ij = M(:,2) == M(:,4);
+IND = (miss1_ii | miss2_ii) & (miss1_ij | miss2_ij);
+col([not(IND),not(IND)]) = 0;
+col = -prod(col,2);
+col = sum(reshape(col,p,size(col,1)/p),1);
+
+D1_tau = triu(ones(n))' - eye(n);
+D1_tau(D1_tau == 1) = col;
+D1_tau = D1_tau + diag(diagonal);
+D1_tau = D1_tau + D1_tau';
+
+%% jac2 tau
+
+% diagonal elements
+R = repelem((1:n)',p,2);
+M = double(repmat(missing_tau2(:,[1,2]),n,1));
+col = repmat(quad2(:,[2,3]),n,1);
+col(not(M == R)) = 0;
+diagonal = (1/2)*sum((reshape(sum(col,2),p,n)).^2,1);
+% off-diagonal elements
+B = triu(ones(n),1)';
+[row_ind,col_ind] = ind2sub(size(B),find(B));
+r = length(row_ind);
+row_ind = repelem(row_ind,p);
+col_ind = repelem(col_ind,p);
+M1 = double(repmat(missing_tau2(:,1),r,1));
+M2 = double(repmat(missing_tau2(:,2),r,1));
+col = repmat(quad2(:,[2,3]),r,1);
+M = [M1,M2,row_ind,col_ind];
+miss1_ii = M(:,1) == M(:,3);
+miss2_ii = M(:,2) == M(:,3);
+miss1_ij = M(:,1) == M(:,4);
+miss2_ij = M(:,2) == M(:,4);
+IND = (miss1_ii | miss2_ii) & (miss1_ij | miss2_ij);
+col([not(IND),not(IND)]) = 0;
+col = -prod(col,2);
+col = sum(reshape(col,p,size(col,1)/p),1);
+
+D2_tau = triu(ones(n))' - eye(n);
+D2_tau(D2_tau == 1) = col;
+D2_tau = D2_tau + diag(diagonal);
+D2_tau = D2_tau + D2_tau';
 
 end

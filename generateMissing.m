@@ -1,14 +1,16 @@
-function missing = generateMissing(n)
+function [missing_mu, missing_tau1, missing_tau2] = generateMissing(n)
 
-% Generates indices for creating the least squares matrices for correcting
-% the determinant equations
+missing_mu = [];
+missing_tau1 = [];
+missing_tau2 = [];
 
-missing = [];
 for i = 1:(n-2)
     for j = (i+1):(n-1)
         for k = (j+1):n
 
-            missing = [missing; "" + j + k, "" + i + k, "" + i + j];
+            missing_mu = [missing_mu; i, j, k];
+            missing_tau1 = [missing_tau1; j, i];
+            missing_tau2 = [missing_tau2; k, j];
 
         end
     end

@@ -6,12 +6,11 @@ format long;
 
 tic
 
-% the number of clusters
-m = 8; 
-% the number of common lines
-n = 15; % must be divisible by 3!
+m = 3; % number of clusters
+n = 16; % number of common lines (must be divisible by 4!)
 
 [C,cluster_labels] = heterogeneousCommonLines(m,n);
+
 % add random scaling
 a = -1;
 b = 1;
@@ -19,97 +18,140 @@ randlam = (b-a)*rand(m*n) + a;
 randlam(logical(eye(m*n))) = 0;
 C = C.*kron(sign(randlam),[1;1]);
 
+n = size(C,2);
+
+noises = [0,0.025,0.05,0.075,0.1,0.15,0.2];
+NOISE = 2;
+
+% 0.789893617021277 at 0.025, 10,000 samples
+% 0.749113475177305 at 0.025, 10,000 samples
+% 0.606382978723404 at 0.05, 10,000 samples
+% 0.645390070921986 at 0.05, 20,000 samples
+% 0.695921985815603 at 0.05, 30,000 samples
+% 0.584219858156028 at 0.075, 30,000 samples
+% 0.557624113475177 at 0.1, 30,000 samples
+
+% 0.566489361702128 new at 0.1, 10,000 samples
+
+% rotational noise
+a = -noises(NOISE);
+b = noises(NOISE);
+noise_matrix = zeros(n);
+for i = 1:n
+    for j = 1:n
+        u = (b-a)*rand(1) + a;
+        noise_matrix(i,j) = u;
+        rotMat = [cos(u),-sin(u);sin(u),cos(u)];
+        C(s3(i),j) = rotMat*C(s3(i),j);
+    end
+end
+
 % construct R^(1)
 R1 = {};
-p = size(C,2);
-ind_rem = 1:p;
-thresh = 10^-6;
-success = 1;
-while ~isempty(ind_rem)
+n = size(C,2); % number of common lines
+ind_rem = 1:n;
+clust_size = 4;
+MAX_TRY = 1000;
 
-    rand3inds = ind_rem(randperm(length(ind_rem)));
-    rand3inds = rand3inds(1:3);
-    rowsC = zeros(m*2*n,m*n);
-    colsC = zeros(m*2*n,m*n);
-    rowsC(s3(rand3inds),:) = 1;
-    colsC(:,rand3inds) = 1;
-    indC = logical(rowsC) & logical(colsC);
-    zero_diag = kron(ones(m*n) - diag(diag(ones(m*n))),[1;1]);
-    indC = indC & logical(zero_diag);
-    D = C';
-    cluster = reshape(D(indC'),2,2*3)';
+% set up ADMM parameters
+[missing_mu, missing_tau1, missing_tau2] = generateMissing(clust_size);
+data.missing_mu = missing_mu;
+data.missing_tau1 = missing_tau1;
+data.missing_tau2 = missing_tau2;
+data.n = clust_size;
+data.keep = eye(clust_size);
+data.IR_iter = 50;
+data.objlp_tol = 5*10^-13;
+data.conv_tol = 10;
+data.MAX_SH = 1000;
 
-    clusterCM = kron(ones(3) - diag(diag(ones(3))),[1;1])';
-    clusterCM(clusterCM == 1) = cluster';
-    clusterCM = clusterCM';
-    [A_out,fval] = runADMM(clusterCM);
-    if fval < thresh
-        R1(end+1) = {rand3inds};
-        ind_rem = setdiff(ind_rem,rand3inds);
-        fprintf('Clutser %d: consistent triple found! \n',success);
-        success = success + 1;
+num_par = 10; % number of parallel cores to run
+output = [];
+
+parfor j = 1:num_par
+
+    convs = zeros(MAX_TRY,1);
+    clusters = zeros(MAX_TRY,clust_size);
+    fvals = zeros(MAX_TRY,1);
+
+    for i = 1:MAX_TRY
+
+        randinds = ind_rem(randperm(length(ind_rem)));
+        randinds = randinds(1:clust_size);
+        rowsC = zeros(2*n,n);
+        colsC = zeros(2*n,n);
+        rowsC(s3(randinds),:) = 1;
+        colsC(:,randinds) = 1;
+        indC = logical(rowsC) & logical(colsC);
+        zero_diag = kron(ones(n) - diag(diag(ones(n))),[1;1]);
+        indC = indC & logical(zero_diag);
+        D = C';
+
+        clusterCM = kron(ones(clust_size) - diag(diag(ones(clust_size))),[1;1])';
+        clusterCM(clusterCM == 1) = D(indC')';
+
+        clusterCM = clusterCM';
+        [A_out,fval,vld,conv] = runADMM_mex(initialize_param(data,clusterCM));
+
+        convs(i) = conv;
+        fvals(i) = fval;
+        clusters(i,:) = randinds;
+
+        i % printing to check run
+
     end
+
+    output = [output;[convs,fvals,clusters]];
+
 end
 
+output(output(:,1) == 0,:) = [];
+[output,I] = sortrows(output,2);
+best_clusters = output(:,3:6);
 
-% merge the clusters together
-R = R1;
-R_old = length(R1) + 1;
-R_new = length(R1);
-while R_new < R_old
+%% Merge the clusters
 
-    ind_R = 1;
-    while ind_R < length(R)
+R = {};
+max_clust = 16;
+for i = 1:m-1
 
-        clusterA = R{ind_R};
-        ind_clust = 1;
-        exit = 0;
-        while ind_clust < length(R)-ind_R+1 && ~exit
-            clusterB = R{ind_R + ind_clust};
-            indA = randperm(length(clusterA));
-            indA = indA([1,2]);
-            indB = randperm(length(clusterB));
-            indB = indB([1,2]);
-            clusterAB = [clusterA(indA), clusterB(indB)];
-            k = length(clusterAB);
-            fprintf('Attempting to merge cluster of size %d \n',length([clusterA, clusterB]));
-            
-            rowsC = zeros(m*2*n,m*n);
-            colsC = zeros(m*2*n,m*n);
-            rowsC(s3(clusterAB),:) = 1;
-            colsC(:,clusterAB) = 1;
-            indC = logical(rowsC) & logical(colsC);
-            zero_diag = kron(ones(m*n) - diag(diag(ones(m*n))),[1;1]);
-            indC = indC & logical(zero_diag);
-            D = C';
-            cluster = reshape(D(indC'),k-1,2*k)';
+    S = best_clusters(1,:);
+    idx = 2;
 
-            clusterCM = kron(ones(k) - diag(diag(ones(k))),[1;1])';
-            clusterCM(clusterCM == 1) = cluster';
-            clusterCM = clusterCM';
-            [A_out,fval,vld] = runADMM(clusterCM);
-            if vld == 1
-                if fval < thresh
-                    fprintf('SUCCESS! Merged cluster \n');
-                    R{ind_R} = [clusterA, clusterB];
-                    R(ind_R + ind_clust) = [];
-                    exit = 1;
-                else
-                    fprintf('Failed to merge cluster \n');
-                end
-            else
-                fprintf('Failed to merge cluster \n');
-            end
-            ind_clust = ind_clust + 1;
+    while length(S) < max_clust
 
+        if not(isempty(intersect(S,best_clusters(idx,:))))
+            S = union(S,best_clusters(idx,:));
         end
-        ind_R = ind_R + 1;
 
+        idx = idx + 1;
+    
     end
 
-    R_old = R_new;
-    R_new = length(R);
+    best_clusters(any(ismember(best_clusters,S),2),:) = [];
+    ind_rem = setdiff(ind_rem,S);
+    R(end+1) = {S};
 
 end
+R(end+1) = {ind_rem};
+
+%% Calculate Rand index
+
+clusters_recovered = [];
+clusters_truth = [];
+for i = 1:length(R)
+    clusters_recovered = [clusters_recovered; [R{i}',i*ones(length(R{i}'),1)]];
+end
+for i = 1:m
+    clusters_truth = [clusters_truth; [cluster_labels(i,:)',i*ones(length(cluster_labels(i,:)'),1)]];
+end
+clusters_recovered = sortrows(clusters_recovered,1);
+clusters_truth = sortrows(clusters_truth,1);
+
+ri = rand_index(clusters_recovered(:,2),clusters_truth(:,2));
 
 toc
+
+
+
+

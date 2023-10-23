@@ -24,9 +24,10 @@ quad1 = [M(sub2ind(size(M),ind_ij(:,1),ind_ij(:,2))),M(sub2ind(size(M),ind_ji(:,
 X = nchoosek(1:n,3);
 m = size(X,1);
 
-I_rep = repmat(ones(2,1), 1, m);
-I_cell = mat2cell(I_rep, 2, ones(1,m));
-ind = logical(blkdiag(I_cell{:}));
+% I_rep = repmat(ones(2,1), 1, m);
+% I_cell = mat2cell(I_rep, 2, ones(1,m));
+% ind = logical(blkdiag(I_cell{:}));
+ind = logical(kron(eye(m),[1;1]));
 
 ind1_ij = reshape([X(:,1),X(:,2)]',1,2,m);
 ind1_ik = reshape([X(:,1),X(:,3)]',1,2,m);

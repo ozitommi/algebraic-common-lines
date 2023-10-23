@@ -1,97 +1,60 @@
-function [var,data] = initialize_param(data)
+function var = initialize_param(data,A)
 
-% Initializes all variables for the IRLS and ADMM optimization
+% initializes all variables for the IRLS and ADMM optimization
 
 n = data.n;
 var.n = n;
+var.keep = not(logical(data.keep));
+var.missing_mu = data.missing_mu;
+var.missing_tau1 = data.missing_tau1;
+var.missing_tau2 = data.missing_tau2;
+var.IR_iter = data.IR_iter;
+var.objlp_tol = data.objlp_tol;
+var.conv_tol = data.conv_tol;
+var.MAX_SH = data.MAX_SH;
 
-var.keep = data.keep;
+M = sqrt(reshape(sum(reshape(A.^2,2,n^2),1),n,n));
+var.E_est = A./kron(M,[1;1]);
+var.E_est(logical(kron(data.keep,[1;1]))) = 0;
 
-% find missing indices for determinant equation correction
-missing = generateMissing(n);
-indices = [];
-for i = 1:n
-    for j = (i+1):n
-        indices = [indices, "" + i + j];
-    end
-end
-indices1 = indices;
-indices1(1) = [];
-indices2 = indices;
-indices2(end) = [];
-m = length(indices1);
-indices1mat = strings(m);
-indices2mat = strings(m);
-for i = 1:m
-    for j = i:m
-        indices1mat(i,j) = indices1(j);
-        indices2mat(i,j) = indices2(j);
-    end
-end
-var.ind1mat = indices1mat;
-var.ind2mat = indices2mat;
-var.missing = missing;
+a = 0.5;
+b = 0.75;
+randlam = (b-a)*rand(n) + a;
+randlam(logical(eye(n))) = 0;
+[A_fixed,vld] = fixSigns((var.E_est).*kron(randlam,[1;1]));
+var.vld = vld;
+var.A = A_fixed;
 
-% var.R = data.R; % comment out if rotations are not provided
-var.X = data.A;
+var.X = var.A;
 var.E = var.X;
-
-var.E_est = zeros(2*n,n);
-for i = 1:n
-    for j = 1:n
-        if data.keep(i,j)
-
-            E_tmp{i,j} = data.E_est{i,j}/norm(data.E_est{i,j});
-            % E_tmp{i,j} = data.E_est{i,j};
-
-            if isempty(E_tmp{i,j})
-                E_tmp{i,j} = zeros(2,1);
-            end
-
-            var.E_est(s3(i),j) = E_tmp{i,j};
-
-        end
-    end
-end
-
-
-var.A = data.A;
-var.X = data.A;
-var.E = var.X;
-
-var.W = logical(data.keep);
-var.W = full(var.W);
-var.W = var.W/norm(double(var.W),'fro');
-
-var.lam = ones(n);
-var.lam(logical(eye(n))) = 0;
+[~,quad2] = checkQuadrics(var.E);
+var.quad = quad2;
 
 var.Y = var.X;
-
 var.gamma = zeros(size(var.X));
 
-var.W = logical(data.keep);
-var.W = full(var.W);
-
-lam = zeros(n);
-for i = 1:n
-    for j = 1:n
-
-        lam(i,j) = sum(sum(var.E_est(s3(i),j).*var.E(s3(i),j)))/...
-            (norm(var.E(s3(i),j),'fro')^2);
-    
-    end
-end
-
+m1 = var.E_est.*var.E;
+m2 = var.E.*var.E;
+bl1 = conv2(m1,ones(2,1),'valid'); % adds elements of each 2x1 submatrix
+% formula: sum of entries of Hadarmard product of A and B is the trace of A'*B
+bl1 = bl1(1:2:end,1:end); % keeps only the properly aligned sums
+bl2 = conv2(m2,ones(2,1),'valid');
+bl2 = bl2(1:2:end,1:end);
+lam = bl1./bl2; % diagonals are NaN from 0/0
+lam(logical(eye(n))) = 0; % set the NaN values to 0
 var.lam = lam;
-var.lam(logical(eye(n))) = 0;
 
-var.keep = data.keep;
-
-var.gamma = zeros(size(var.X));
-var.Y = var.X;
+var.W = logical(data.keep);
+var.W = full(var.W);
 var.W = var.W/norm(double(var.W),'fro');
 
+Wn = sum(var.W(:));
+var.tau = 0.5*Wn;
+
+p = 1;
+[objl2,objlp] = eval_obj(var,p);
+var.objl2 = objl2;
+var.objlp = objlp;
 
 end
 

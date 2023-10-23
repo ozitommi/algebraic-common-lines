@@ -1,4 +1,4 @@
-function [W]=estimate_W(var,p)
+function W = estimate_W(var,p)
 
 % Updates the weights of the IRLS method
 

@@ -79,7 +79,6 @@ while iter < MAX && diff1 > 10^-6
     mat2 = kron(var.W.*var.lam.^2,ones(2,1)) + var.tau;
     A = mat1./mat2;
 
-    % project A
     idx_block = logical(kron(eye(n),ones(2,1)));
     A(idx_block) = 0; % make 2x1 block diagonals 0
 
@@ -109,8 +108,10 @@ function var = opt_Y(var)
 
 % update B
 tmpY = var.X - var.gamma;
-[U, S, V] = svds(tmpY, 3);
-var.Y = U*S*V';
+[U, S, V] = svd(tmpY);
+% [U, S, V] = svds(tmpY, 3);
+var.Y = U(:,1:3)*S(1:3,1:3)*V(:,1:3)';
+% var.Y = U*S*V';
 
 end
 

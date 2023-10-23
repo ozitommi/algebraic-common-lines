@@ -2,86 +2,18 @@
 clear all;
 format long;
 
-n = 3;
-
-% create pure common lines matrices
-[A_true,~,RotsA] = create_A(n);
-[B_true,~,RotsB] = create_A(n);
-% add random scaling
-a = -1;
-b = 1;
-randlam = (b-a)*rand(n) + a;
-randlam(logical(eye(n))) = 0;
-A = A_true.*kron(sign(randlam),[1;1]);
-% add random scaling
-a = -1;
-b = 1;
-randlam = (b-a)*rand(n) + a;
-randlam(logical(eye(n))) = 0;
-B = B_true.*kron(sign(randlam),[1;1]);
-
-% create partial common lines matrix
-C = (1 - (-1))*rand(2*2*n,2*n) + (-1);
-idx_block = logical(kron(eye(2*n),ones(2,1)));
-C(idx_block) = 0;
-
-% fill in the correct entries of C
-C(s3(1),4) = A(s3(2),1);
-C(s3(1),6) = A(s3(2),3);
-C(s3(2),3) = B(s3(3),1);
-C(s3(2),5) = B(s3(3),2);
-C(s3(3),2) = B(s3(1),3);
-C(s3(3),5) = B(s3(1),2);
-C(s3(4),1) = A(s3(1),2);
-C(s3(4),6) = A(s3(1),3);
-C(s3(5),2) = B(s3(2),3);
-C(s3(5),3) = B(s3(2),1);
-C(s3(6),1) = A(s3(3),2);
-C(s3(6),4) = A(s3(3),1);
-
-% the true clusters
-trueA = [1;4;6];
-trueB = [2;3;5];
-% trueA = [4;1;6];
-% trueB = [3;5;2];
-
-% check that pulling the true clusters out gives us back the pure common
-% lines matrices
-rowsA = zeros(2*2*n,2*n);
-rowsB = zeros(2*2*n,2*n);
-colsA = zeros(2*2*n,2*n);
-colsB = zeros(2*2*n,2*n);
-rowsA(s3(trueA),:) = 1;
-rowsB(s3(trueB),:) = 1;
-colsA(:,trueA) = 1;
-colsB(:,trueB) = 1;
-indA = logical(rowsA) & logical(colsA);
-indB = logical(rowsB) & logical(colsB);
-A_take = reshape(C(indA),2*n,n); % it doesn't matter if it doesn't exactly match A, it will still satisfy the constraints
-B_take = reshape(C(indB),2*n,n);
-% [quad1,quad2] = checkQuadrics(A_take);
-% [quad1,quad2] = checkQuadrics(B_take);
-% [~,fvalA] = runADMM(A_take);
-% [~,fvalB] = runADMM(B_take);
-% fvalA
-% fvalB
-
-
-
-
-
-
-
-%% Clustering algorithm for toy problem
-
+%% Clustering algorithm
 
 tic
 
 
-m = 5;
-n = 30; % must be divisible by 3!
+% the number of clusters
+m = 3; 
+% the number of common lines
+n = 16; % must be divisible by 4
 
 [C,cluster_labels] = heterogeneousCommonLines(m,n);
+
 % add random scaling
 a = -1;
 b = 1;
@@ -89,267 +21,427 @@ randlam = (b-a)*rand(m*n) + a;
 randlam(logical(eye(m*n))) = 0;
 C = C.*kron(sign(randlam),[1;1]);
 
+n = size(C,2);
+
+noises = [0,0.025,0.05,0.075,0.1,0.15,0.2];
+NOISE = 3;
+
+% 0.15 radians, m = 2, n = 16, 9 misclassified, 22 minutes
+% 0.1 radians, m = 2, n = 16, 4 misclassified, 13 minutes
+% 0.1 radians, m = 3, n = 16, adjusted rand index 0.004, rand index 0.56, 37 minutes
+
+% rotational noise
+a = -noises(NOISE);
+b = noises(NOISE);
+noise_matrix = zeros(n);
+for i = 1:n
+    for j = 1:n
+        u = (b-a)*rand(1) + a;
+        noise_matrix(i,j) = u;
+        rotMat = [cos(u),-sin(u);sin(u),cos(u)];
+        C(s3(i),j) = rotMat*C(s3(i),j);
+    end
+end
+
+% C = importdata("synthetic_image_cl_matrix.mat");
+% n = size(C,2); % number of common lines
+
+% C = importdata("synthetic_imgae_cl_matrix_snr20.mat");
+% n = size(C,2); % number of common lines
+
+% import = importdata("0.05-noisy-2-16-CLM.mat");
+% C_true = import.C;
+% C = C_true;
+% cluster_labels = import.cluster_labels;
+% n = size(C_true,2); % number of common lines
+
+% construct R^(1)
 R1 = {};
 p = size(C,2);
-ind_rem = 1:p;
-thresh = 10^-6;
+% p = size(C_true,2);
+% sample_size = 16;
+% subsample = randperm(p);
+% subsample = subsample(1:sample_size);
+% C = C_true(s3(subsample),subsample);
 
+n = size(C,2); % number of common lines
+
+ind_rem = 1:p;
+% ind_rem = 1:sample_size;
+clust_size = 4;
+
+% thresh = 0.001;
+% thresh = 0.049187607836541 - 2*0.019074920287184; % when n = 4, NOISE = 0.025
+thresh = 0.098517384754784 - 2*0.038116690424327; % when n = 4, NOISE = 0.05
+% thresh = 0.147252807987198; % when n = 4, NOISE = 0.075
+% thresh = 0.2; % when n = 4, NOISE = 0.1
+% thresh = 0.633369109197906 % when n = 7, NOISE = 0.1
+% thresh = 0.402810702176317 - 1*0.048256324748670; % when n = 8, NOISE = 0.05
+
+
+% n = clust_size;
+% tot = 0;
+% runs = 100000;
+% fvals = zeros(runs,1);
+% for k = 1:runs
+%     A = create_A(n);
+%     a = -noises(NOISE);
+%     b = noises(NOISE);
+%     for i = 1:n
+%         for j = 1:n
+%             u = (b-a)*rand(1) + a;
+%             rotMat = [cos(u),-sin(u);sin(u),cos(u)];
+%             A(s3(i),j) = rotMat*A(s3(i),j);
+%         end
+%     end
+%     M = sqrt(reshape(sum(reshape(A.^2,2,n^2),1),n,n));
+%     norm_err = norm(M-M','fro');
+%     [~,quad2] = checkQuadrics(A);
+%     det_err = sum(norm(quad2(:,1) - quad2(:,2))) + sum(norm(quad2(:,2) - quad2(:,3)));
+%     % tot = tot + norm_err + det_err;
+%     fvals(k) = norm_err + det_err;
+% end
+% mean = tot/runs
+% n = size(C,2);
+
+% 0.076
+
+fvalBest = Inf;
+% MAX_TRY = 100;
+MAX_TRY = 1000;
+iter = 1;
+success = 1;
+IR_ite = 100;
+
+
+% find missing indices for determinant equation correction
+[missing_mu, missing_tau1, missing_tau2] = generateMissing(clust_size);
+data.missing_mu = missing_mu;
+data.missing_tau1 = missing_tau1;
+data.missing_tau2 = missing_tau2;
+data.n = clust_size;
+data.keep = eye(clust_size);
+data.IR_iter = 50;
+data.objlp_tol = 5*10^-13;
+data.conv_tol = 10;
+data.MAX_SH = 1000;
+
+num_par = 25;
+output = [];
+
+parfor j = 1:num_par
+% for j = 1:num_par
+
+    convs = zeros(MAX_TRY,1);
+    clusters = zeros(MAX_TRY,clust_size);
+    fvals = zeros(MAX_TRY,1);
+
+    for i = 1:MAX_TRY
+
+        randinds = ind_rem(randperm(length(ind_rem)));
+        randinds = randinds(1:clust_size);
+        rowsC = zeros(2*n,n);
+        colsC = zeros(2*n,n);
+        rowsC(s3(randinds),:) = 1;
+        colsC(:,randinds) = 1;
+        indC = logical(rowsC) & logical(colsC);
+        zero_diag = kron(ones(n) - diag(diag(ones(n))),[1;1]);
+        indC = indC & logical(zero_diag);
+        D = C';
+
+        clusterCM = kron(ones(clust_size) - diag(diag(ones(clust_size))),[1;1])';
+        clusterCM(clusterCM == 1) = D(indC')';
+
+        clusterCM = clusterCM';
+        [A_out,fval,vld,conv] = runADMM_mex(initialize_param(data,clusterCM));
+
+        convs(i) = conv;
+        fvals(i) = fval;
+        clusters(i,:) = randinds;
+
+        i
+
+    end
+
+    output = [output;[convs,fvals,clusters]];
+
+end
+
+output(output(:,1) == 0,:) = [];
+[output,I] = sortrows(output,2);
+best_clusters = output(:,3:6);
+
+% while ~isempty(ind_rem)
+% 
+%     randinds = ind_rem(randperm(length(ind_rem)));
+%     randinds = randinds(1:clust_size);
+%     rowsC = zeros(2*n,n);
+%     colsC = zeros(2*n,n);
+%     rowsC(s3(randinds),:) = 1;
+%     colsC(:,randinds) = 1;
+%     indC = logical(rowsC) & logical(colsC);
+%     zero_diag = kron(ones(n) - diag(diag(ones(n))),[1;1]);
+%     indC = indC & logical(zero_diag);
+%     D = C';
+% 
+%     clusterCM = kron(ones(clust_size) - diag(diag(ones(clust_size))),[1;1])';
+%     clusterCM(clusterCM == 1) = D(indC')';
+% 
+%     clusterCM = clusterCM';
+%     [A_out,fval,vld,conv] = runADMM_mex(initialize_param(data,clusterCM));
+% 
+%     % conv
+%     % fval
+%     % randinds
+%     % cluster_labels
+%     % max(sum(double(ismember(randinds,cluster_labels(1,:)))),sum(double(ismember(randinds,cluster_labels(2,:)))))
+% 
+%     if fval < fvalBest && conv == 1
+%         fvalBest = fval;
+%         indBest = randinds;
+%     end
+% 
+%     if fval < thresh && conv == 1
+%         R1(end+1) = {randinds};
+%         ind_rem = setdiff(ind_rem,randinds);
+%         fprintf('Cluster %d: consistent cluster found! \n',success);
+%         success = success + 1;
+%         iter = 1;
+%         fvalBest = Inf;
+%     end
+% 
+%     iter = iter + 1;
+%     if iter > MAX_TRY
+%         R1(end+1) = {indBest};
+%         ind_rem = setdiff(ind_rem,indBest);
+%         fprintf('Cluster %d: added best cluster after trying \n',success);
+%         success = success + 1;
+%         iter = 1;
+%         fvalBest = Inf;
+%     end
+% 
+%     if length(ind_rem) <= clust_size
+%         R1(end+1) = {ind_rem};
+%         ind_rem = [];
+%         fprintf('Final cluster! \n');
+%     end
+% 
+% end
+
+toc
+
+% output = sortrows([convs,fvals,clusters],2);
+% output = importdata("output.mat");
+
+R = {};
+max_clust = 16;
+for i = 1:m-1
+
+    S = best_clusters(1,:);
+    idx = 2;
+
+    while length(S) < max_clust
+
+        if ~not(isempty(intersect(S,best_clusters(idx,:))))
+            S = union(S,best_clusters(idx,:));
+        end
+
+        idx = idx + 1;
+    
+    end
+
+    best_clusters(any(ismember(best_clusters,S),2),:) = [];
+    ind_rem = setdiff(ind_rem,S);
+    R(end+1) = {S};
+
+end
+R(end+1) = {ind_rem};
+
+
+
+
+clusters = output(:,3:6);
+S = {clusters(1,:)};
+cluster_tree = {S};
+num_clusts = 1;
+ind_rem = setdiff(ind_rem,clusters(1,:));
+i = 2;
 while ~isempty(ind_rem)
 
-    rand3inds = ind_rem(randperm(length(ind_rem)));
-    rand3inds = rand3inds(1:3);
-    rowsC = zeros(m*2*n,m*n);
-    colsC = zeros(m*2*n,m*n);
-    rowsC(s3(rand3inds),:) = 1;
-    colsC(:,rand3inds) = 1;
-    indC = logical(rowsC) & logical(colsC);
-    zero_diag = kron(ones(m*n) - diag(diag(ones(m*n))),[1;1]);
-    indC = indC & logical(zero_diag);
-    D = C';
-    cluster = reshape(D(indC'),2,2*3)';
-
-    clusterCM = kron(ones(3) - diag(diag(ones(3))),[1;1])';
-    clusterCM(clusterCM == 1) = cluster';
-    clusterCM = clusterCM';
-    [A_out,fval] = runADMM(clusterCM);
-    % [quad1,quad2] = checkQuadrics(A_out);
-    if fval < thresh
-        R1(end+1) = {rand3inds};
-        ind_rem = setdiff(ind_rem,rand3inds);
-        fprintf('Phase 1: Cluster of size 3 found! \n');
-    end
-
-    % clusterCM = kron(ones(3) - diag(diag(ones(3))),[1;1])';
-    % clusterCM(clusterCM == 1) = cluster';
-    % clusterCM = clusterCM';
-
-    % exit = 0;
-    % iter = 1;
-    % % ind_perm = flip(perms(1:3));
-    % ind_perm = perms(1:3);
-    % while iter <= 6 && ~exit
-    % 
-    % 
-    % % clusterCM
-    % % cluster_perm = clusterCM(s3(ind_perm(iter,:))',ind_perm(iter,:)')
-    % % cluster_perm = clusterCM(s3(ind_perm(iter,:))',:);
-    % cluster_perm = cluster(s3(ind_perm(iter,:))',:);
-    % 
-    % 
-    % 
-    %     clusterCM = kron(ones(3) - diag(diag(ones(3))),[1;1])';
-    %     clusterCM(clusterCM == 1) = cluster_perm';
-    %     clusterCM = clusterCM';
-    %     [A_out,fval] = runADMM(clusterCM)
-    %     [quad1,quad2] = checkQuadrics(A_out)
-    %     quad1 = checkNorms(A_out);
-    %     if fval < thresh
-    %         R1(end+1) = {rand3inds};
-    %         ind_rem = setdiff(ind_rem,rand3inds);
-    %         exit = 1;
-    %     end
-    %     iter = iter + 1;
-    % end
-
-end
-
-R = R1;
-R_old = length(R1) + 1;
-R_new = length(R1);
-while R_new < R_old
-
-    ind_R = 1;
-    while ind_R < length(R)
-
-        clusterA = R{ind_R};
-        ind_clust = 1;
-        exit = 0;
-        while ind_clust < length(R)-ind_R+1 && ~exit
-            clusterB = R{ind_R + ind_clust};
-            % clusterAB = [clusterA, clusterB];
-            clusterAB = [clusterA(randi(2,length(clusterA))), clusterB(1)];
-            k = length(clusterAB);
-            fprintf('Phase 2: Attempting to merge cluster of size %d \n',length([clusterA, clusterB]));
-            
-
-            rowsC = zeros(m*2*n,m*n);
-            colsC = zeros(m*2*n,m*n);
-            rowsC(s3(clusterAB),:) = 1;
-            colsC(:,clusterAB) = 1;
-            indC = logical(rowsC) & logical(colsC);
-            zero_diag = kron(ones(m*n) - diag(diag(ones(m*n))),[1;1]);
-            indC = indC & logical(zero_diag);
-            D = C';
-            cluster = reshape(D(indC'),k-1,2*k)';
-
-            clusterCM = kron(ones(k) - diag(diag(ones(k))),[1;1])';
-            clusterCM(clusterCM == 1) = cluster';
-            clusterCM = clusterCM';
-            [A_out,fval,vld] = runADMM(clusterCM);
-            if vld == 1
-                fprintf('Phase 2: Merged cluster of size %d!\n',length([clusterA, clusterB]));
-                % [quad1,quad2] = checkQuadrics(A_out);
-                if fval < thresh
-                    % R{ind_R} = clusterAB;
-                    R{ind_R} = [clusterA, clusterB];
-                    R(ind_R + ind_clust) = [];
-                    exit = 1;
-                end
-            else
-                fprintf('Phase 2: Failed to merge cluster \n');
-            end
-            ind_clust = ind_clust + 1;
-
+    cluster = clusters(i,:);
+    R = cluster_tree{i-1};
+    S = {};
+    for j = 1:length(R)
+        if ~isempty(intersect(cluster,R{j}))
+            cluster = union(cluster,R{j});
+        else
+            S(end+1) = R(j);
         end
-        ind_R = ind_R + 1;
-
     end
-
-    R_old = R_new;
-    R_new = length(R);
+    S(end+1) = {cluster};
+    num_clusts = [num_clusts;length(S)];
+    cluster_tree{end+1} = S;
+    ind_rem = setdiff(ind_rem,cluster);
+    i = i + 1;
 
 end
+cluster_tree = cluster_tree';
+
+
+
+% clusters = output(:,3:6);
+% S = {clusters(1,:)};
+% cluster_tree = {S};
+% num_clusts = 1;
+% ind_rem = setdiff(ind_rem,clusters(1,:));
+% i = 2;
+% while ~isempty(ind_rem)
+% 
+%     cluster = clusters(i,:);
+%     R = cluster_tree{i-1};
+%     S = {};
+%     for j = 1:length(R)
+%         if ~isempty(intersect(cluster,R{j}))
+%             cluster = union(cluster,R{j});
+%         else
+%             S(end+1) = R(j);
+%         end
+%     end
+%     S(end+1) = {cluster};
+%     num_clusts = [num_clusts;length(S)];
+%     cluster_tree{end+1} = S;
+%     ind_rem = setdiff(ind_rem,cluster);
+%     i = i + 1;
+% 
+% end
+% cluster_tree = cluster_tree';
+
+% merge the clusters together
+% R = R1;
+% L = length(R);
+% num_clusts = 3;
+% ranking_matrix = Inf*ones(L);
+% RANK_TRY = 50;
+% for l = 1:RANK_TRY
+%     for i = 1:L-1
+%         for j = i+1:L
+%             clusterA = R{i};
+%             clusterB = R{j};
+%             indA = randperm(length(clusterA));
+%             indA = indA([1,2]);
+%             indB = randperm(length(clusterB));
+%             indB = indB([1,2]);
+%             clusterAB = [clusterA(indA), clusterB(indB)];
+%             k = length(clusterAB);
+% 
+%             rowsC = zeros(2*n,n);
+%             colsC = zeros(2*n,n);
+%             rowsC(s3(clusterAB),:) = 1;
+%             colsC(:,clusterAB) = 1;
+%             indC = logical(rowsC) & logical(colsC);
+%             zero_diag = kron(ones(n) - diag(diag(ones(n))),[1;1]);
+%             indC = indC & logical(zero_diag);
+%             D = C';
+%             cluster = reshape(D(indC'),k-1,2*k)';
+% 
+%             clusterCM = kron(ones(k) - diag(diag(ones(k))),[1;1])';
+%             clusterCM(clusterCM == 1) = cluster';
+%             clusterCM = clusterCM';
+%             [A_out,fval,vld] = runADMM_mex(initialize_param(data,clusterCM));
+% 
+%             ranking_matrix(i,j) = min(fval,ranking_matrix(i,j));
+%         end
+%     end
+% end
+
+% [~,idx] = sort(ranking_matrix(:));
+% idx(ranking_matrix(:)==0) = [];
+% [row, col] = ind2sub(size(ranking_matrix), idx);
+% indexes = [row col];
+
+
+
+% % merge the clusters together
+% thresh = 0.0001;
+% R = R1;
+% R_old = length(R1) + 1;
+% R_new = length(R1);
+% while R_new < R_old
+% 
+%     ind_R = 1;
+%     while ind_R < length(R)
+% 
+%         clusterA = R{ind_R};
+%         ind_clust = 1;
+%         exit = 0;
+%         while ind_clust < length(R)-ind_R+1 && ~exit
+%             clusterB = R{ind_R + ind_clust};
+%             indA = randperm(length(clusterA));
+%             indA = indA([1,2]);
+%             % indA = indA([1,2,3]);
+%             indB = randperm(length(clusterB));
+%             indB = indB([1,2]);
+%             % indB = indB([1,2,3]);
+%             clusterAB = [clusterA(indA), clusterB(indB)];
+%             k = length(clusterAB);
+%             fprintf('Attempting to merge cluster of size %d \n',length([clusterA, clusterB]));
+% 
+%             rowsC = zeros(2*n,n);
+%             colsC = zeros(2*n,n);
+%             rowsC(s3(clusterAB),:) = 1;
+%             colsC(:,clusterAB) = 1;
+%             indC = logical(rowsC) & logical(colsC);
+%             zero_diag = kron(ones(n) - diag(diag(ones(n))),[1;1]);
+%             indC = indC & logical(zero_diag);
+%             D = C';
+%             cluster = reshape(D(indC'),k-1,2*k)';
+% 
+%             clusterCM = kron(ones(k) - diag(diag(ones(k))),[1;1])';
+%             clusterCM(clusterCM == 1) = cluster';
+%             clusterCM = clusterCM';
+%             data.A = clusterCM;
+%             [A_out,fval,vld] = runADMM(initialize_param(data));
+%             fval
+%             if vld == 1
+%                 if fval < thresh
+%                     fprintf('SUCCESS! Merged cluster \n');
+%                     R{ind_R} = [clusterA, clusterB];
+%                     R(ind_R + ind_clust) = [];
+%                     exit = 1;
+%                 else
+%                     fprintf('Failed to merge cluster \n');
+%                 end
+%             else
+%                 fprintf('Failed to merge cluster \n');
+%             end
+%             ind_clust = ind_clust + 1;
+% 
+%         end
+%         ind_R = ind_R + 1;
+% 
+%     end
+% 
+%     R_old = R_new;
+%     R_new = length(R);
+% 
+% end
 
 toc
 
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-% check that pulling the true clusters out gives us back the pure common
-% lines matrices
-rowsA = zeros(m*2*n,m*n);
-rowsB = zeros(m*2*n,m*n);
-colsA = zeros(m*2*n,m*n);
-colsB = zeros(m*2*n,m*n);
-rowsA(s3(trueA),:) = 1;
-rowsB(s3(trueB),:) = 1;
-colsA(:,trueA) = 1;
-colsB(:,trueB) = 1;
-indA = logical(rowsA) & logical(colsA);
-indB = logical(rowsB) & logical(colsB);
-A_take = reshape(C(indA),2*n,n); % WRONG it doesn't matter if it doesn't exactly match A, it will still satisfy the constraints
-B_take = reshape(C(indB),2*n,n);
-[quad1,quad2] = checkQuadrics(A_take)
-[quad1,quad2] = checkQuadrics(B_take)
-[~,fvalA] = runADMM(A_take);
-[~,fvalB] = runADMM(B_take);
-fvalA
-fvalB
-
-
-
-clusters = cell(1,2);
-p = size(C,2);
-x0 = randperm(p);
-clusters{1} = x0(1:3);
-clusters{2} = x0(4:6);
-
-
-rand_inds = sort(randperm(2));
-rand_inds = rand_inds(1:2);
-clusterA = clusters{rand_inds(1)};
-clusterB = clusters{rand_inds(2)};
-rowsA = zeros(size(C,1),size(C,2));
-rowsB = zeros(size(C,1),size(C,2));
-colsA = zeros(size(C,1),size(C,2));
-colsB = zeros(size(C,1),size(C,2));
-rowsA(s3(clusterA),:) = 1;
-rowsB(s3(clusterB),:) = 1;
-colsA(:,clusterA) = 1;
-colsB(:,clusterB) = 1;
-indA = logical(rowsA) & logical(colsA);
-indB = logical(rowsB) & logical(colsB);
-A_take = reshape(C(indA),2*n,n);
-B_take = reshape(C(indB),2*n,n);
-% [quad1,quad2] = checkQuadrics(A_take2);
-% [quad1,quad2] = checkQuadrics(B_take2);
-[~,fvalA] = runADMM(A_take);
-[~,fvalB] = runADMM(B_take);
-
-
-
-
-
-
-
-
-
-
-while (fvalA > thresh) && (fvalB > thresh)
-
-    rand_inds = sort(randperm(2));
-    rand_inds = rand_inds(1:2);
-    clusterA = clusters{rand_inds(1)};
-    clusterB = clusters{rand_inds(2)};
-    rowsA = zeros(size(C,1),size(C,2));
-    rowsB = zeros(size(C,1),size(C,2));
-    colsA = zeros(size(C,1),size(C,2));
-    colsB = zeros(size(C,1),size(C,2));
-    rowsA(s3(clusterA),:) = 1;
-    rowsB(s3(clusterB),:) = 1;
-    colsA(:,clusterA) = 1;
-    colsB(:,clusterB) = 1;
-    indA = logical(rowsA) & logical(colsA);
-    indB = logical(rowsB) & logical(colsB);
-    A_take = reshape(C(indA),2*n,n);
-    B_take = reshape(C(indB),2*n,n);
-    quad1 = checkNorms(A_take);
-    quad1 = checkNorms(B_take);
-    [A_out,fvalA] = runADMM(A_take);
-    [B_out,fvalB] = runADMM(B_take);
-    quad1 = checkNorms(A_out);
-    quad1 = checkNorms(B_out);
-    fvalA
-    fvalB
-    abs(quad1(:,1) - quad1(:,2))/sum(abs(quad1(:,1) - quad1(:,2)));
-    % clusterB
-    % trueB
-
-    if (fvalA > thresh) && (fvalB > thresh)
-
-        swapA = clusterA(randi(length(clusterA)));
-        swapB = clusterB(randi(length(clusterB)));
-        clusterA(clusterA == swapA) = [];
-        clusterB(clusterB == swapB) = [];
-        clusterA = sort([clusterA, swapB])
-        clusterB = sort([clusterB, swapA])
-        clusters{rand_inds(1)} = clusterA;
-        clusters{rand_inds(2)} = clusterB;
-
-    end
-
+clusters_recovered = [];
+clusters_truth = [];
+for i = 1:length(R)
+    clusters_recovered = [clusters_recovered; [R{i}',i*ones(length(R{i}'),1)]];
 end
+for i = 1:m
+    clusters_truth = [clusters_truth; [cluster_labels(i,:)',i*ones(length(cluster_labels(i,:)'),1)]];
+end
+clusters_recovered = sortrows(clusters_recovered,1);
+clusters_truth = sortrows(clusters_truth,1);
 
-
-
-
-
-% TODO:
-% Implement deterministic index swapping based on norm violation
-% Later: implement probabilistic version
-% Write code to generate test heterogeneous common lines test matrices
-
-
-
-
+ri = rand_index(clusters_recovered(:,2),clusters_truth(:,2));
 
 

@@ -46,7 +46,7 @@ b = reshape(sign(quad2)',3*m,[]);
 b(b == 1) = 0;
 b(b == -1) = 1;
 
-warning('off','comm:gflineq:NoSolution');
+% warning('off','comm:gflineq:NoSolution');
 [x,vld] = gflineq(A,b,2);
 
 if vld == 1
@@ -66,7 +66,7 @@ if vld == 1
 
 else
 
-    A_fixed = zeros(2*n,n);
+    A_fixed = A_err;
     return;
 
 end
