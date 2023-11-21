@@ -62,17 +62,20 @@ data.n = clust_size;
 data.keep = eye(clust_size);
 data.IR_iter = 50;
 data.objlp_tol = 5*10^-13;
-data.conv_tol = 10;
+data.conv_tol = 100;
 data.MAX_SH = 1000;
 
-num_par = 10; % number of parallel cores to run
+num_par = 1; % number of parallel cores to run
 output = [];
+A_outs = {};
 
-parfor j = 1:num_par
+% parfor j = 1:num_par
+for j = 1:num_par
 
     convs = zeros(MAX_TRY,1);
     clusters = zeros(MAX_TRY,clust_size);
     fvals = zeros(MAX_TRY,1);
+    norms = zeros(MAX_TRY,1);
 
     for i = 1:MAX_TRY
 
@@ -92,20 +95,26 @@ parfor j = 1:num_par
 
         clusterCM = clusterCM';
         [A_out,fval,vld,conv] = runADMM_mex(initialize_param(data,clusterCM));
+        % [A_out,fval,vld,conv] = runADMM(initialize_param(data,clusterCM));
 
         convs(i) = conv;
         fvals(i) = fval;
         clusters(i,:) = randinds;
+        norms(i) = norm(A_out,'fro');
+        A_outs(end+1) = {A_out};
 
         i % printing to check run
 
     end
 
-    output = [output;[convs,fvals,clusters]];
+    output = [output;[convs,fvals,clusters,norms]];
 
 end
 
+output_full = output;
+
 output(output(:,1) == 0,:) = [];
+% output(output(:,7) < 2.816169733772339 - 1*0.277509198115395,:) = [];
 [output,I] = sortrows(output,2);
 best_clusters = output(:,3:6);
 
@@ -125,7 +134,7 @@ for i = 1:m-1
         end
 
         idx = idx + 1;
-    
+
     end
 
     best_clusters(any(ismember(best_clusters,S),2),:) = [];

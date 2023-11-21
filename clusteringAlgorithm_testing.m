@@ -7,6 +7,8 @@ format long;
 runs = 50;
 
 CLUSTERS = {};
+CLUSTER_LABELS = {};
+OUTPUTS = {};
 ERR = zeros(runs,3);
 
 for TIMES = 1:runs
@@ -28,7 +30,7 @@ C = C.*kron(sign(randlam),[1;1]);
 n = size(C,2);
 
 noises = [0,0.025,0.05,0.075,0.1,0.15,0.2];
-NOISE = 2;
+NOISE = 3;
 
 % rotational noise
 a = -noises(NOISE);
@@ -48,7 +50,7 @@ R1 = {};
 n = size(C,2); % number of common lines
 ind_rem = 1:n;
 clust_size = 4;
-MAX_TRY = 100;
+MAX_TRY = 1000;
 
 % set up ADMM parameters
 [missing_mu, missing_tau1, missing_tau2] = generateMissing(clust_size);
@@ -133,6 +135,8 @@ end
 R(end+1) = {ind_rem};
 
 CLUSTERS(end+1) = {R};
+OUTPUTS(end+1) = {output};
+CLUSTER_LABELS(end+1) = {cluster_labels};
 
 %% Calculate Rand index
 
@@ -161,6 +165,6 @@ ERR(TIMES,3) = t;
 end
 
 sample_size = MAX_TRY*num_par;
-save('noise-0.05-m=3-n=16.mat','ERR','CLUSTERS','NOISE','noises','sample_size','runs');
+% save('noise-0.05-m=3-n=16.mat','ERR','CLUSTERS','NOISE','noises','sample_size','runs','OUTPUTS');
 
 

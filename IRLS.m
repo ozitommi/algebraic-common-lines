@@ -38,6 +38,8 @@ while iter_irls < T_iter && diffF > 10^-6 && objlp > objlp_tol
     % fprintf('IRLS iter %d IRLS obj L2 %.3e obj Lp(p=1) %.3e\n',iter_irls,objl2,objlp);
     iter_irls = iter_irls + 1;
 
+    % [~,Sigma,~] = svd(var.E,'vector')
+
 end
 
 %% Output

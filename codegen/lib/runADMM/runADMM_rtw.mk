@@ -2,7 +2,7 @@
 ## Makefile generated for component 'runADMM'. 
 ## 
 ## Makefile     : runADMM_rtw.mk
-## Generated on : Sun Oct 22 15:26:36 2023
+## Generated on : Thu Oct 26 23:30:38 2023
 ## Final product: ./runADMM.a
 ## Product type : static-library
 ## 
@@ -22,7 +22,7 @@ MAKEFILE                  = runADMM_rtw.mk
 MATLAB_ROOT               = /Applications/MATLAB_R2023a.app
 MATLAB_BIN                = /Applications/MATLAB_R2023a.app/bin
 MATLAB_ARCH_BIN           = $(MATLAB_BIN)/maci64
-START_DIR                 = /Users/ozitommi/Documents/MATLAB/Higher\ Order\ Sychronization/algebraic_constraints_22-10-2023
+START_DIR                 = /Users/ozitommi/Documents/MATLAB/Higher\ Order\ Sychronization/algebraic_constraints_23-10-2023/algebraic-common-lines
 TGT_FCN_LIB               = ISO_C
 SOLVER_OBJ                = 
 CLASSIC_INTERFACE         = 0

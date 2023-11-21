@@ -7,14 +7,7 @@ vld = var.vld;
 
 [result] = IRLS(var);
 var = result.var;
-
-%% Check if ADMM converged
-
-if any(abs(var.lam) > var.conv_tol)
-    conv = 0;
-else
-    conv = 1;
-end
+var.lam
 
 %% Fix norm equations with Sinkhorn
 
@@ -25,6 +18,7 @@ iter = 1;
 
 while iter < MAX_SH && diffF > 10^-8
 
+    % scale rows
     M = sqrt(reshape(sum(reshape((var.E).^2,2,n^2),1),n,n));
     [L,~] = constructScaleMats(M);
     [~,quad2] = checkQuadrics(var.E);
@@ -35,6 +29,19 @@ while iter < MAX_SH && diffF > 10^-8
     LE = diag(repelem(d1,2))*(var.E);
     var.E = norm(var.E,'fro')*(LE/norm(LE,'fro'));
 
+    % % bound norms inside box
+    % M = sqrt(reshape(sum(reshape((var.E).^2,2,n^2),1),n,n));
+    % S = ones(n);
+    % S(M < var.norm_tol_min) = (var.norm_tol_min)./M(M < var.norm_tol_min);
+    % S(logical(eye(n))) = 1;
+    % var.E = kron(S,[1;1]).*(var.E);
+    % M = sqrt(reshape(sum(reshape((var.E).^2,2,n^2),1),n,n));
+    % S = ones(n);
+    % S(M > var.norm_tol_max) = (var.norm_tol_max)./M(M > var.norm_tol_max);
+    % S(logical(eye(n))) = 1;
+    % var.E = kron(S,[1;1]).*(var.E);
+
+    % scale columns
     M = sqrt(reshape(sum(reshape((var.E).^2,2,n^2),1),n,n));
     [~,R] = constructScaleMats(M);
     [~,quad2] = checkQuadrics(var.E);
@@ -45,11 +52,22 @@ while iter < MAX_SH && diffF > 10^-8
     ER = (var.E)*diag(d2);
     var.E = norm(var.E,'fro')*(ER/norm(ER,'fro'));
 
+    % % bound norms inside box
+    % M = sqrt(reshape(sum(reshape((var.E).^2,2,n^2),1),n,n));
+    % S = ones(n);
+    % S(M < var.norm_tol_min) = (var.norm_tol_min)./M(M < var.norm_tol_min);
+    % S(logical(eye(n))) = 1;
+    % var.E = kron(S,[1;1]).*(var.E);
+    % M = sqrt(reshape(sum(reshape((var.E).^2,2,n^2),1),n,n));
+    % S = ones(n);
+    % S(M > var.norm_tol_max) = (var.norm_tol_max)./M(M > var.norm_tol_max);
+    % S(logical(eye(n))) = 1;
+    % var.E = kron(S,[1;1]).*(var.E);
+
     M = sqrt(reshape(sum(reshape((var.E).^2,2,n^2),1),n,n));
     norm_err = norm(M-M','fro');
     [~,quad2] = checkQuadrics(var.E);
     det_err = sum(norm(quad2(:,1) - quad2(:,2))) + sum(norm(quad2(:,2) - quad2(:,3)));
-    % fprintf('error after rows %.9e\n',norm_err + det_err);
 
     diffF = abs(obj - (norm_err + det_err));
     obj = norm_err + det_err;
@@ -59,11 +77,18 @@ end
 
 %% Output
 
-A_out = var.E;
+% A_out = var.E;
+A_out = var.E/norm(var.E,'fro');
 M = sqrt(reshape(sum(reshape((var.E).^2,2,n^2),1),n,n));
 norm_err = norm(M-M','fro');
-[~,quad2] = checkQuadrics(var.E);
+[quad1,quad2] = checkQuadrics(var.E);
 det_err = sum(norm(quad2(:,1) - quad2(:,2))) + sum(norm(quad2(:,2) - quad2(:,3)));
 fval = norm_err + det_err;
+
+if any(any(quad1 < var.norm_tol))
+    conv = 0;
+else
+    conv = 1;
+end
 
 end

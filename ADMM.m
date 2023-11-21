@@ -96,6 +96,10 @@ while iter < MAX && diff1 > 10^-6
     var.lam = bl1./bl2; % diagonals are NaN from 0/0
     var.lam(logical(eye(n))) = 0; % set the NaN values to 0
 
+    % bound scales inside box
+    var.lam = min(var.lam,var.conv_tol);
+    var.lam = max(var.lam,-var.conv_tol);
+
     f2 = eval_obj_t(var);
     diff1 = abs(f2 - f2_old);
     f2_old = f2;
@@ -109,9 +113,7 @@ function var = opt_Y(var)
 % update B
 tmpY = var.X - var.gamma;
 [U, S, V] = svd(tmpY);
-% [U, S, V] = svds(tmpY, 3);
 var.Y = U(:,1:3)*S(1:3,1:3)*V(:,1:3)';
-% var.Y = U*S*V';
 
 end
 

@@ -87,7 +87,7 @@ static void b_emlrt_marshallIn(const emlrtStack *sp, const mxArray *u,
                                const emlrtMsgIdentifier *parentId, struct0_T *y)
 {
   static const int32_T dims = 0;
-  static const char_T *fieldNames[22] = {"n",
+  static const char_T *fieldNames[23] = {"n",
                                          "keep",
                                          "missing_mu",
                                          "missing_tau1",
@@ -95,6 +95,7 @@ static void b_emlrt_marshallIn(const emlrtStack *sp, const mxArray *u,
                                          "IR_iter",
                                          "objlp_tol",
                                          "conv_tol",
+                                         "norm_tol",
                                          "MAX_SH",
                                          "E_est",
                                          "vld",
@@ -112,7 +113,7 @@ static void b_emlrt_marshallIn(const emlrtStack *sp, const mxArray *u,
   emlrtMsgIdentifier thisId;
   thisId.fParent = parentId;
   thisId.bParentIsCell = false;
-  emlrtCheckStructR2012b((emlrtConstCTX)sp, parentId, u, 22,
+  emlrtCheckStructR2012b((emlrtConstCTX)sp, parentId, u, 23,
                          (const char_T **)&fieldNames[0], 0U,
                          (const void *)&dims);
   thisId.fIdentifier = "n";
@@ -153,61 +154,66 @@ static void b_emlrt_marshallIn(const emlrtStack *sp, const mxArray *u,
       sp,
       emlrtAlias(emlrtGetFieldR2017b((emlrtConstCTX)sp, u, 0, 7, "conv_tol")),
       &thisId);
+  thisId.fIdentifier = "norm_tol";
+  y->norm_tol = c_emlrt_marshallIn(
+      sp,
+      emlrtAlias(emlrtGetFieldR2017b((emlrtConstCTX)sp, u, 0, 8, "norm_tol")),
+      &thisId);
   thisId.fIdentifier = "MAX_SH";
   y->MAX_SH = c_emlrt_marshallIn(
-      sp, emlrtAlias(emlrtGetFieldR2017b((emlrtConstCTX)sp, u, 0, 8, "MAX_SH")),
+      sp, emlrtAlias(emlrtGetFieldR2017b((emlrtConstCTX)sp, u, 0, 9, "MAX_SH")),
       &thisId);
   thisId.fIdentifier = "E_est";
   e_emlrt_marshallIn(
-      sp, emlrtAlias(emlrtGetFieldR2017b((emlrtConstCTX)sp, u, 0, 9, "E_est")),
+      sp, emlrtAlias(emlrtGetFieldR2017b((emlrtConstCTX)sp, u, 0, 10, "E_est")),
       &thisId, y->E_est);
   thisId.fIdentifier = "vld";
   y->vld = c_emlrt_marshallIn(
-      sp, emlrtAlias(emlrtGetFieldR2017b((emlrtConstCTX)sp, u, 0, 10, "vld")),
+      sp, emlrtAlias(emlrtGetFieldR2017b((emlrtConstCTX)sp, u, 0, 11, "vld")),
       &thisId);
   thisId.fIdentifier = "A";
   e_emlrt_marshallIn(
-      sp, emlrtAlias(emlrtGetFieldR2017b((emlrtConstCTX)sp, u, 0, 11, "A")),
+      sp, emlrtAlias(emlrtGetFieldR2017b((emlrtConstCTX)sp, u, 0, 12, "A")),
       &thisId, y->A);
   thisId.fIdentifier = "X";
   e_emlrt_marshallIn(
-      sp, emlrtAlias(emlrtGetFieldR2017b((emlrtConstCTX)sp, u, 0, 12, "X")),
+      sp, emlrtAlias(emlrtGetFieldR2017b((emlrtConstCTX)sp, u, 0, 13, "X")),
       &thisId, y->X);
   thisId.fIdentifier = "E";
   e_emlrt_marshallIn(
-      sp, emlrtAlias(emlrtGetFieldR2017b((emlrtConstCTX)sp, u, 0, 13, "E")),
+      sp, emlrtAlias(emlrtGetFieldR2017b((emlrtConstCTX)sp, u, 0, 14, "E")),
       &thisId, y->E);
   thisId.fIdentifier = "quad";
   e_emlrt_marshallIn(
-      sp, emlrtAlias(emlrtGetFieldR2017b((emlrtConstCTX)sp, u, 0, 14, "quad")),
+      sp, emlrtAlias(emlrtGetFieldR2017b((emlrtConstCTX)sp, u, 0, 15, "quad")),
       &thisId, y->quad);
   thisId.fIdentifier = "Y";
   e_emlrt_marshallIn(
-      sp, emlrtAlias(emlrtGetFieldR2017b((emlrtConstCTX)sp, u, 0, 15, "Y")),
+      sp, emlrtAlias(emlrtGetFieldR2017b((emlrtConstCTX)sp, u, 0, 16, "Y")),
       &thisId, y->Y);
   thisId.fIdentifier = "gamma";
   e_emlrt_marshallIn(
-      sp, emlrtAlias(emlrtGetFieldR2017b((emlrtConstCTX)sp, u, 0, 16, "gamma")),
+      sp, emlrtAlias(emlrtGetFieldR2017b((emlrtConstCTX)sp, u, 0, 17, "gamma")),
       &thisId, y->gamma);
   thisId.fIdentifier = "lam";
   e_emlrt_marshallIn(
-      sp, emlrtAlias(emlrtGetFieldR2017b((emlrtConstCTX)sp, u, 0, 17, "lam")),
+      sp, emlrtAlias(emlrtGetFieldR2017b((emlrtConstCTX)sp, u, 0, 18, "lam")),
       &thisId, y->lam);
   thisId.fIdentifier = "W";
   e_emlrt_marshallIn(
-      sp, emlrtAlias(emlrtGetFieldR2017b((emlrtConstCTX)sp, u, 0, 18, "W")),
+      sp, emlrtAlias(emlrtGetFieldR2017b((emlrtConstCTX)sp, u, 0, 19, "W")),
       &thisId, y->W);
   thisId.fIdentifier = "tau";
   y->tau = c_emlrt_marshallIn(
-      sp, emlrtAlias(emlrtGetFieldR2017b((emlrtConstCTX)sp, u, 0, 19, "tau")),
+      sp, emlrtAlias(emlrtGetFieldR2017b((emlrtConstCTX)sp, u, 0, 20, "tau")),
       &thisId);
   thisId.fIdentifier = "objl2";
   y->objl2 = c_emlrt_marshallIn(
-      sp, emlrtAlias(emlrtGetFieldR2017b((emlrtConstCTX)sp, u, 0, 20, "objl2")),
+      sp, emlrtAlias(emlrtGetFieldR2017b((emlrtConstCTX)sp, u, 0, 21, "objl2")),
       &thisId);
   thisId.fIdentifier = "objlp";
   y->objlp = c_emlrt_marshallIn(
-      sp, emlrtAlias(emlrtGetFieldR2017b((emlrtConstCTX)sp, u, 0, 21, "objlp")),
+      sp, emlrtAlias(emlrtGetFieldR2017b((emlrtConstCTX)sp, u, 0, 22, "objlp")),
       &thisId);
   emlrtDestroyArray(&u);
 }

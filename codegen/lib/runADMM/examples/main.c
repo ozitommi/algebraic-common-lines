@@ -73,6 +73,7 @@ Change this value to the value that the application requires. */
   result->IR_iter = result_tmp;
   result->objlp_tol = result_tmp;
   result->conv_tol = result_tmp;
+  result->norm_tol = result_tmp;
   result->MAX_SH = result_tmp;
   result->vld = result_tmp;
   result->tau = result_tmp;

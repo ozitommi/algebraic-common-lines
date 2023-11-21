@@ -57,6 +57,7 @@ typedef struct {
   double IR_iter;
   double objlp_tol;
   double conv_tol;
+  double norm_tol;
   double MAX_SH;
   emxArray_real_T *E_est;
   double vld;

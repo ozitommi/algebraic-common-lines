@@ -239,6 +239,7 @@ static double c_binary_expand_op(const emxArray_real_T *in1,
 void runADMM(struct0_T *var, emxArray_real_T *A_out, double *fval, double *vld,
              double *conv)
 {
+  emxArray_boolean_T *c_x;
   emxArray_boolean_T *x;
   emxArray_boolean_T *y;
   emxArray_real_T b_var;
@@ -246,12 +247,12 @@ void runADMM(struct0_T *var, emxArray_real_T *A_out, double *fval, double *vld,
   emxArray_real_T *L;
   emxArray_real_T *M;
   emxArray_real_T *V;
-  emxArray_real_T *a__14;
   emxArray_real_T *b_M;
   emxArray_real_T *b_x;
   emxArray_real_T *g_var;
   emxArray_real_T *h_var;
   emxArray_real_T *i_var;
+  emxArray_real_T *quad1;
   struct0_T d_var;
   struct0_T e_var;
   struct_T expl_temp;
@@ -273,6 +274,7 @@ void runADMM(struct0_T *var, emxArray_real_T *A_out, double *fval, double *vld,
   int i2;
   int k;
   int nx;
+  boolean_T c_y[2];
   boolean_T b_y;
   boolean_T exitg1;
   boolean_T *x_data;
@@ -383,25 +385,24 @@ void runADMM(struct0_T *var, emxArray_real_T *A_out, double *fval, double *vld,
     }
   }
   emxFree_boolean_T(&x);
-  b_y = (y->size[1] != 0);
-  if (b_y) {
-    k = 0;
-    exitg1 = false;
-    while ((!exitg1) && (k <= y->size[1] - 1)) {
-      if (!y_data[k]) {
-        b_y = false;
-        exitg1 = true;
-      } else {
-        k++;
-      }
+  b_y = false;
+  k = 1;
+  exitg1 = false;
+  while ((!exitg1) && (k <= y->size[1])) {
+    if (y_data[k - 1]) {
+      b_y = true;
+      exitg1 = true;
+    } else {
+      k++;
     }
   }
   emxFree_boolean_T(&y);
+  b_i = !b_y;
   /*  Fix norm equations with Sinkhorn */
   diffF = rtInf;
   objlp = rtInf;
   iter_irls = 1.0;
-  emxInit_real_T(&a__14, 2);
+  emxInit_real_T(&quad1, 2);
   emxInit_real_T(&D2_mu, 2);
   emxInit_real_T(&V, 2);
   emxInit_real_T(&b_x, 2);
@@ -423,15 +424,15 @@ void runADMM(struct0_T *var, emxArray_real_T *A_out, double *fval, double *vld,
     }
     i = (int)(n * n);
     if (i == 0) {
-      b_i = b_x->size[0] * b_x->size[1];
+      k = b_x->size[0] * b_x->size[1];
       b_x->size[0] = 1;
       b_x->size[1] = 0;
-      emxEnsureCapacity_real_T(b_x, b_i);
+      emxEnsureCapacity_real_T(b_x, k);
     } else {
-      b_i = b_x->size[0] * b_x->size[1];
+      k = b_x->size[0] * b_x->size[1];
       b_x->size[0] = 1;
       b_x->size[1] = i;
-      emxEnsureCapacity_real_T(b_x, b_i);
+      emxEnsureCapacity_real_T(b_x, k);
       b_x_data = b_x->data;
       for (i2 = 0; i2 < i; i2++) {
         nx = i2 << 1;
@@ -439,10 +440,10 @@ void runADMM(struct0_T *var, emxArray_real_T *A_out, double *fval, double *vld,
         b_x_data[i2] += M_data[nx + 1];
       }
     }
-    b_i = b_x->size[0] * b_x->size[1];
+    k = b_x->size[0] * b_x->size[1];
     b_x->size[0] = (int)n;
     b_x->size[1] = (int)n;
-    emxEnsureCapacity_real_T(b_x, b_i);
+    emxEnsureCapacity_real_T(b_x, k);
     b_x_data = b_x->data;
     a = (int)n * (int)n;
     for (k = 0; k < a; k++) {
@@ -450,16 +451,16 @@ void runADMM(struct0_T *var, emxArray_real_T *A_out, double *fval, double *vld,
     }
     constructScaleMats(b_x, b_M, M);
     b_M_data = b_M->data;
-    b_i = i_var->size[0] * i_var->size[1];
+    k = i_var->size[0] * i_var->size[1];
     i_var->size[0] = var->E->size[0];
     i_var->size[1] = var->E->size[1];
-    emxEnsureCapacity_real_T(i_var, b_i);
+    emxEnsureCapacity_real_T(i_var, k);
     var_data = i_var->data;
     i2 = var->E->size[0] * var->E->size[1] - 1;
-    for (b_i = 0; b_i <= i2; b_i++) {
-      var_data[b_i] = var->E->data[b_i];
+    for (k = 0; k <= i2; k++) {
+      var_data[k] = var->E->data[k];
     }
-    checkQuadrics(i_var, a__14, var->quad);
+    checkQuadrics(i_var, quad1, var->quad);
     constructDetMats(var->n, var->missing_mu, var->missing_tau1,
                      var->missing_tau2, var->quad, i_var, D2_mu, M, b_x);
     M_data = D2_mu->data;
@@ -476,14 +477,14 @@ void runADMM(struct0_T *var, emxArray_real_T *A_out, double *fval, double *vld,
     }
     if ((b_M->size[0] == i_var->size[0]) && (b_M->size[1] == i_var->size[1]) &&
         (nx == D2_mu->size[0]) && (k == D2_mu->size[1])) {
-      b_i = L->size[0] * L->size[1];
+      k = L->size[0] * L->size[1];
       L->size[0] = b_M->size[0];
       L->size[1] = b_M->size[1];
-      emxEnsureCapacity_real_T(L, b_i);
+      emxEnsureCapacity_real_T(L, k);
       b_x_data = L->data;
       i2 = b_M->size[0] * b_M->size[1];
-      for (b_i = 0; b_i < i2; b_i++) {
-        b_x_data[b_i] = (b_M_data[b_i] + var_data[b_i]) + M_data[b_i];
+      for (k = 0; k < i2; k++) {
+        b_x_data[k] = (b_M_data[k] + var_data[k]) + M_data[k];
       }
       svd(L, M, b_x, V);
       M_data = V->data;
@@ -492,9 +493,9 @@ void runADMM(struct0_T *var, emxArray_real_T *A_out, double *fval, double *vld,
       M_data = V->data;
     }
     i2 = V->size[0];
-    b_i = g_var->size[0];
+    k = g_var->size[0];
     g_var->size[0] = V->size[0] << 1;
-    emxEnsureCapacity_real_T(g_var, b_i);
+    emxEnsureCapacity_real_T(g_var, k);
     var_data = g_var->data;
     nx = -1;
     for (k = 0; k < i2; k++) {
@@ -504,14 +505,14 @@ void runADMM(struct0_T *var, emxArray_real_T *A_out, double *fval, double *vld,
       nx += 2;
     }
     nx = g_var->size[0];
-    b_i = b_x->size[0] * b_x->size[1];
+    k = b_x->size[0] * b_x->size[1];
     b_x->size[0] = g_var->size[0];
     b_x->size[1] = g_var->size[0];
-    emxEnsureCapacity_real_T(b_x, b_i);
+    emxEnsureCapacity_real_T(b_x, k);
     b_x_data = b_x->data;
     i2 = g_var->size[0] * g_var->size[0];
-    for (b_i = 0; b_i < i2; b_i++) {
-      b_x_data[b_i] = 0.0;
+    for (k = 0; k < i2; k++) {
+      b_x_data[k] = 0.0;
     }
     for (i2 = 0; i2 < nx; i2++) {
       b_x_data[i2 + b_x->size[0] * i2] = var_data[i2];
@@ -519,35 +520,35 @@ void runADMM(struct0_T *var, emxArray_real_T *A_out, double *fval, double *vld,
     mtimes(b_x, var->E, M);
     M_data = M->data;
     IR_iter = b_norm(var->E);
-    b_i = var->E->size[0] * var->E->size[1];
+    k = var->E->size[0] * var->E->size[1];
     var->E->size[0] = M->size[0];
     var->E->size[1] = M->size[1];
-    emxEnsureCapacity_real_T(var->E, b_i);
+    emxEnsureCapacity_real_T(var->E, k);
     objlp_tol = b_norm(M);
     i2 = M->size[0] * M->size[1];
-    for (b_i = 0; b_i < i2; b_i++) {
-      var->E->data[b_i] = IR_iter * (M_data[b_i] / objlp_tol);
+    for (k = 0; k < i2; k++) {
+      var->E->data[k] = IR_iter * (M_data[k] / objlp_tol);
     }
-    b_i = M->size[0] * M->size[1];
+    k = M->size[0] * M->size[1];
     M->size[0] = var->E->size[0];
     M->size[1] = var->E->size[1];
-    emxEnsureCapacity_real_T(M, b_i);
+    emxEnsureCapacity_real_T(M, k);
     M_data = M->data;
     i2 = var->E->size[0] * var->E->size[1];
-    for (b_i = 0; b_i < i2; b_i++) {
-      IR_iter = var->E->data[b_i];
-      M_data[b_i] = IR_iter * IR_iter;
+    for (k = 0; k < i2; k++) {
+      IR_iter = var->E->data[k];
+      M_data[k] = IR_iter * IR_iter;
     }
     if (i == 0) {
-      b_i = b_x->size[0] * b_x->size[1];
+      k = b_x->size[0] * b_x->size[1];
       b_x->size[0] = 1;
       b_x->size[1] = 0;
-      emxEnsureCapacity_real_T(b_x, b_i);
+      emxEnsureCapacity_real_T(b_x, k);
     } else {
-      b_i = b_x->size[0] * b_x->size[1];
+      k = b_x->size[0] * b_x->size[1];
       b_x->size[0] = 1;
       b_x->size[1] = i;
-      emxEnsureCapacity_real_T(b_x, b_i);
+      emxEnsureCapacity_real_T(b_x, k);
       b_x_data = b_x->data;
       for (i2 = 0; i2 < i; i2++) {
         nx = i2 << 1;
@@ -555,26 +556,26 @@ void runADMM(struct0_T *var, emxArray_real_T *A_out, double *fval, double *vld,
         b_x_data[i2] += M_data[nx + 1];
       }
     }
-    b_i = b_x->size[0] * b_x->size[1];
+    k = b_x->size[0] * b_x->size[1];
     b_x->size[0] = (int)n;
     b_x->size[1] = (int)n;
-    emxEnsureCapacity_real_T(b_x, b_i);
+    emxEnsureCapacity_real_T(b_x, k);
     b_x_data = b_x->data;
     for (k = 0; k < a; k++) {
       b_x_data[k] = sqrt(b_x_data[k]);
     }
     constructScaleMats(b_x, M, b_M);
     b_M_data = b_M->data;
-    b_i = i_var->size[0] * i_var->size[1];
+    k = i_var->size[0] * i_var->size[1];
     i_var->size[0] = var->E->size[0];
     i_var->size[1] = var->E->size[1];
-    emxEnsureCapacity_real_T(i_var, b_i);
+    emxEnsureCapacity_real_T(i_var, k);
     var_data = i_var->data;
     i2 = var->E->size[0] * var->E->size[1] - 1;
-    for (b_i = 0; b_i <= i2; b_i++) {
-      var_data[b_i] = var->E->data[b_i];
+    for (k = 0; k <= i2; k++) {
+      var_data[k] = var->E->data[k];
     }
-    checkQuadrics(i_var, a__14, var->quad);
+    checkQuadrics(i_var, quad1, var->quad);
     constructDetMats(var->n, var->missing_mu, var->missing_tau1,
                      var->missing_tau2, var->quad, M, b_x, i_var, D2_mu);
     M_data = D2_mu->data;
@@ -591,14 +592,14 @@ void runADMM(struct0_T *var, emxArray_real_T *A_out, double *fval, double *vld,
     }
     if ((b_M->size[0] == i_var->size[0]) && (b_M->size[1] == i_var->size[1]) &&
         (nx == D2_mu->size[0]) && (k == D2_mu->size[1])) {
-      b_i = L->size[0] * L->size[1];
+      k = L->size[0] * L->size[1];
       L->size[0] = b_M->size[0];
       L->size[1] = b_M->size[1];
-      emxEnsureCapacity_real_T(L, b_i);
+      emxEnsureCapacity_real_T(L, k);
       b_x_data = L->data;
       i2 = b_M->size[0] * b_M->size[1];
-      for (b_i = 0; b_i < i2; b_i++) {
-        b_x_data[b_i] = (b_M_data[b_i] + var_data[b_i]) + M_data[b_i];
+      for (k = 0; k < i2; k++) {
+        b_x_data[k] = (b_M_data[k] + var_data[k]) + M_data[k];
       }
       svd(L, M, b_x, V);
       M_data = V->data;
@@ -607,14 +608,14 @@ void runADMM(struct0_T *var, emxArray_real_T *A_out, double *fval, double *vld,
       M_data = V->data;
     }
     nx = V->size[0];
-    b_i = b_x->size[0] * b_x->size[1];
+    k = b_x->size[0] * b_x->size[1];
     b_x->size[0] = V->size[0];
     b_x->size[1] = V->size[0];
-    emxEnsureCapacity_real_T(b_x, b_i);
+    emxEnsureCapacity_real_T(b_x, k);
     b_x_data = b_x->data;
     i2 = V->size[0] * V->size[0];
-    for (b_i = 0; b_i < i2; b_i++) {
-      b_x_data[b_i] = 0.0;
+    for (k = 0; k < i2; k++) {
+      b_x_data[k] = 0.0;
     }
     for (i2 = 0; i2 < nx; i2++) {
       b_x_data[i2 + b_x->size[0] * i2] =
@@ -623,24 +624,24 @@ void runADMM(struct0_T *var, emxArray_real_T *A_out, double *fval, double *vld,
     mtimes(var->E, b_x, M);
     M_data = M->data;
     IR_iter = b_norm(var->E);
-    b_i = var->E->size[0] * var->E->size[1];
+    k = var->E->size[0] * var->E->size[1];
     var->E->size[0] = M->size[0];
     var->E->size[1] = M->size[1];
-    emxEnsureCapacity_real_T(var->E, b_i);
+    emxEnsureCapacity_real_T(var->E, k);
     objlp_tol = b_norm(M);
     i2 = M->size[0] * M->size[1];
-    for (b_i = 0; b_i < i2; b_i++) {
-      var->E->data[b_i] = IR_iter * (M_data[b_i] / objlp_tol);
+    for (k = 0; k < i2; k++) {
+      var->E->data[k] = IR_iter * (M_data[k] / objlp_tol);
     }
-    b_i = M->size[0] * M->size[1];
+    k = M->size[0] * M->size[1];
     M->size[0] = var->E->size[0];
     M->size[1] = var->E->size[1];
-    emxEnsureCapacity_real_T(M, b_i);
+    emxEnsureCapacity_real_T(M, k);
     M_data = M->data;
     i2 = var->E->size[0] * var->E->size[1];
-    for (b_i = 0; b_i < i2; b_i++) {
-      IR_iter = var->E->data[b_i];
-      M_data[b_i] = IR_iter * IR_iter;
+    for (k = 0; k < i2; k++) {
+      IR_iter = var->E->data[k];
+      M_data[k] = IR_iter * IR_iter;
     }
     if (i == 0) {
       i = b_x->size[0] * b_x->size[1];
@@ -649,10 +650,10 @@ void runADMM(struct0_T *var, emxArray_real_T *A_out, double *fval, double *vld,
       emxEnsureCapacity_real_T(b_x, i);
       b_x_data = b_x->data;
     } else {
-      b_i = b_x->size[0] * b_x->size[1];
+      k = b_x->size[0] * b_x->size[1];
       b_x->size[0] = 1;
       b_x->size[1] = i;
-      emxEnsureCapacity_real_T(b_x, b_i);
+      emxEnsureCapacity_real_T(b_x, k);
       b_x_data = b_x->data;
       for (i2 = 0; i2 < i; i2++) {
         nx = i2 << 1;
@@ -680,9 +681,9 @@ void runADMM(struct0_T *var, emxArray_real_T *A_out, double *fval, double *vld,
       i2 = M->size[1];
       for (i = 0; i < i2; i++) {
         nx = M->size[0];
-        for (b_i = 0; b_i < nx; b_i++) {
-          b_M_data[b_i + b_M->size[0] * i] =
-              M_data[b_i + M->size[0] * i] - M_data[i + M->size[0] * b_i];
+        for (k = 0; k < nx; k++) {
+          b_M_data[k + b_M->size[0] * i] =
+              M_data[k + M->size[0] * i] - M_data[i + M->size[0] * k];
         }
       }
       IR_iter = b_norm(b_M);
@@ -698,7 +699,7 @@ void runADMM(struct0_T *var, emxArray_real_T *A_out, double *fval, double *vld,
     for (i = 0; i <= i2; i++) {
       var_data[i] = var->E->data[i];
     }
-    checkQuadrics(i_var, a__14, var->quad);
+    checkQuadrics(i_var, quad1, var->quad);
     i2 = var->quad->size[0];
     i = g_var->size[0];
     g_var->size[0] = var->quad->size[0];
@@ -749,10 +750,10 @@ void runADMM(struct0_T *var, emxArray_real_T *A_out, double *fval, double *vld,
     emxEnsureCapacity_real_T(b_x, i);
     b_x_data = b_x->data;
   } else {
-    b_i = b_x->size[0] * b_x->size[1];
+    k = b_x->size[0] * b_x->size[1];
     b_x->size[0] = 1;
     b_x->size[1] = i;
-    emxEnsureCapacity_real_T(b_x, b_i);
+    emxEnsureCapacity_real_T(b_x, k);
     b_x_data = b_x->data;
     for (i2 = 0; i2 < i; i2++) {
       nx = i2 << 1;
@@ -782,9 +783,9 @@ void runADMM(struct0_T *var, emxArray_real_T *A_out, double *fval, double *vld,
   for (i = 0; i <= i2; i++) {
     var_data[i] = var->E->data[i];
   }
-  checkQuadrics(i_var, a__14, var->quad);
+  checkQuadrics(i_var, quad1, var->quad);
+  b_x_data = quad1->data;
   emxFree_real_T(&i_var);
-  emxFree_real_T(&a__14);
   if (M->size[0] == M->size[1]) {
     i = b_M->size[0] * b_M->size[1];
     b_M->size[0] = M->size[0];
@@ -794,9 +795,9 @@ void runADMM(struct0_T *var, emxArray_real_T *A_out, double *fval, double *vld,
     i2 = M->size[1];
     for (i = 0; i < i2; i++) {
       nx = M->size[0];
-      for (b_i = 0; b_i < nx; b_i++) {
-        b_M_data[b_i + b_M->size[0] * i] =
-            M_data[b_i + M->size[0] * i] - M_data[i + M->size[0] * b_i];
+      for (k = 0; k < nx; k++) {
+        b_M_data[k + b_M->size[0] * i] =
+            M_data[k + M->size[0] * i] - M_data[i + M->size[0] * k];
       }
     }
     i2 = var->quad->size[0];
@@ -821,7 +822,57 @@ void runADMM(struct0_T *var, emxArray_real_T *A_out, double *fval, double *vld,
   emxFree_real_T(&g_var);
   emxFree_real_T(&b_M);
   emxFree_real_T(&M);
-  *conv = !b_y;
+  emxInit_boolean_T(&c_x, 2);
+  i = c_x->size[0] * c_x->size[1];
+  c_x->size[0] = quad1->size[0];
+  c_x->size[1] = 2;
+  emxEnsureCapacity_boolean_T(c_x, i);
+  x_data = c_x->data;
+  i2 = quad1->size[0] << 1;
+  for (i = 0; i < i2; i++) {
+    x_data[i] = (b_x_data[i] < var->norm_tol);
+  }
+  emxFree_real_T(&quad1);
+  c_y[0] = false;
+  c_y[1] = false;
+  a = c_x->size[0];
+  k = 0;
+  exitg1 = false;
+  while ((!exitg1) && (k + 1 <= a)) {
+    if (x_data[k]) {
+      c_y[0] = true;
+      exitg1 = true;
+    } else {
+      k++;
+    }
+  }
+  a = c_x->size[0] + c_x->size[0];
+  k = c_x->size[0];
+  exitg1 = false;
+  while ((!exitg1) && (k + 1 <= a)) {
+    if (x_data[k]) {
+      c_y[1] = true;
+      exitg1 = true;
+    } else {
+      k++;
+    }
+  }
+  emxFree_boolean_T(&c_x);
+  b_y = false;
+  k = 0;
+  exitg1 = false;
+  while ((!exitg1) && (k < 2)) {
+    if (c_y[k]) {
+      b_y = true;
+      exitg1 = true;
+    } else {
+      k++;
+    }
+  }
+  if (b_y) {
+    b_i = 0;
+  }
+  *conv = b_i;
 }
 
 /* End of code generation (runADMM.c) */

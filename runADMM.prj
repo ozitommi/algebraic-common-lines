@@ -1,5 +1,5 @@
 <deployment-project plugin="plugin.coder" plugin-version="R2023a">
-  <configuration build-checksum="863034629" file="/Users/ozitommi/Documents/MATLAB/Higher Order Sychronization/algebraic_constraints_22-10-2023/runADMM.prj" location="/Users/ozitommi/Documents/MATLAB/Higher Order Sychronization/algebraic_constraints_22-10-2023" name="runADMM" target="target.unifiedcoder" target-name="MATLAB Coder">
+  <configuration build-checksum="1945940645" file="/Users/ozitommi/Documents/MATLAB/Higher Order Sychronization/algebraic_constraints_23-10-2023/algebraic-common-lines/runADMM.prj" location="/Users/ozitommi/Documents/MATLAB/Higher Order Sychronization/algebraic_constraints_23-10-2023/algebraic-common-lines" name="runADMM" target="target.unifiedcoder" target-name="MATLAB Coder">
     <profile key="profile.mex">
       <param.BuiltInstrumentedMex>false</param.BuiltInstrumentedMex>
       <param.RanInstrumentedMex>false</param.RanInstrumentedMex>
@@ -594,7 +594,7 @@
     <param.objective>option.objective.c</param.objective>
     <param.WorkflowStep>workflowSummary</param.WorkflowStep>
     <param.TestSnippets>
-      <item>clusteringAlgorithm</item>
+      <item>clusteringAlgorithm_synthetic_testing</item>
     </param.TestSnippets>
     <param.ExternalFcnMajority>column</param.ExternalFcnMajority>
     <param.UseGlobals>option.UseGlobals.No</param.UseGlobals>
@@ -613,7 +613,7 @@
     <param.AutoInferUnboundedSizeThreshold>2048</param.AutoInferUnboundedSizeThreshold>
     <param.EnableFixedPointStep>false</param.EnableFixedPointStep>
     <param.EnableScreener>true</param.EnableScreener>
-    <param.AnnotationChecksum>4141296246</param.AnnotationChecksum>
+    <param.AnnotationChecksum>1331626217</param.AnnotationChecksum>
     <var.LegacyTarget />
     <var.MirrorOnOpen>false</var.MirrorOnOpen>
     <param.FixedPointEnabled>false</param.FixedPointEnabled>
@@ -623,13 +623,13 @@
     <param.hdlParamStorage />
     <var.gc.lastOutputRoot>codegen/lib/runADMM</var.gc.lastOutputRoot>
     <var.gc.lastOutputType>C_CODE</var.gc.lastOutputType>
-    <var.gc.preBuildChecksum>1929743706</var.gc.preBuildChecksum>
+    <var.gc.preBuildChecksum>3006632075</var.gc.preBuildChecksum>
     <var.cfi.lastOutputRoot>codegen/mex/runADMM</var.cfi.lastOutputRoot>
-    <var.cfi.preBuildChecksum>1730516556</var.cfi.preBuildChecksum>
-    <var.lastCfiTestSnippet>clusteringAlgorithm</var.lastCfiTestSnippet>
+    <var.cfi.preBuildChecksum>521201869</var.cfi.preBuildChecksum>
+    <var.lastCfiTestSnippet>clusteringAlgorithm_synthetic_testing</var.lastCfiTestSnippet>
     <var.outdatedOnRestore>false</var.outdatedOnRestore>
-    <var.lastUserSourceChecksum>&lt;?xml version="1.0" encoding="UTF-8" standalone="yes"?&gt;&lt;checksum&gt;&lt;includedFiles&gt;&lt;file&gt;/Users/ozitommi/Documents/MATLAB/Higher Order Sychronization/algebraic_constraints_22-10-2023/ADMM.m&lt;/file&gt;&lt;file&gt;/Users/ozitommi/Documents/MATLAB/Higher Order Sychronization/algebraic_constraints_22-10-2023/IRLS.m&lt;/file&gt;&lt;file&gt;/Users/ozitommi/Documents/MATLAB/Higher Order Sychronization/algebraic_constraints_22-10-2023/checkQuadrics.m&lt;/file&gt;&lt;file&gt;/Users/ozitommi/Documents/MATLAB/Higher Order Sychronization/algebraic_constraints_22-10-2023/constructDetMats.m&lt;/file&gt;&lt;file&gt;/Users/ozitommi/Documents/MATLAB/Higher Order Sychronization/algebraic_constraints_22-10-2023/constructScaleMats.m&lt;/file&gt;&lt;file&gt;/Users/ozitommi/Documents/MATLAB/Higher Order Sychronization/algebraic_constraints_22-10-2023/estimate_W.m&lt;/file&gt;&lt;file&gt;/Users/ozitommi/Documents/MATLAB/Higher Order Sychronization/algebraic_constraints_22-10-2023/eval_obj.m&lt;/file&gt;&lt;file&gt;/Users/ozitommi/Documents/MATLAB/Higher Order Sychronization/algebraic_constraints_22-10-2023/runADMM.m&lt;/file&gt;&lt;file&gt;/Users/ozitommi/Documents/MATLAB/Higher Order Sychronization/algebraic_constraints_22-10-2023/s3.m&lt;/file&gt;&lt;/includedFiles&gt;&lt;value&gt;1516379173&lt;/value&gt;&lt;/checksum&gt;</var.lastUserSourceChecksum>
-    <var.sourceSetState>&lt;?xml version="1.0" encoding="UTF-8" standalone="yes"?&gt;&lt;sourceModel&gt;&lt;primarySourceFiles&gt;&lt;file&gt;/Users/ozitommi/Documents/MATLAB/Higher Order Sychronization/algebraic_constraints_22-10-2023/ADMM.m&lt;/file&gt;&lt;file&gt;/Users/ozitommi/Documents/MATLAB/Higher Order Sychronization/algebraic_constraints_22-10-2023/IRLS.m&lt;/file&gt;&lt;file&gt;/Users/ozitommi/Documents/MATLAB/Higher Order Sychronization/algebraic_constraints_22-10-2023/checkQuadrics.m&lt;/file&gt;&lt;file&gt;/Users/ozitommi/Documents/MATLAB/Higher Order Sychronization/algebraic_constraints_22-10-2023/constructDetMats.m&lt;/file&gt;&lt;file&gt;/Users/ozitommi/Documents/MATLAB/Higher Order Sychronization/algebraic_constraints_22-10-2023/constructScaleMats.m&lt;/file&gt;&lt;file&gt;/Users/ozitommi/Documents/MATLAB/Higher Order Sychronization/algebraic_constraints_22-10-2023/estimate_W.m&lt;/file&gt;&lt;file&gt;/Users/ozitommi/Documents/MATLAB/Higher Order Sychronization/algebraic_constraints_22-10-2023/eval_obj.m&lt;/file&gt;&lt;file&gt;/Users/ozitommi/Documents/MATLAB/Higher Order Sychronization/algebraic_constraints_22-10-2023/runADMM.m&lt;/file&gt;&lt;file&gt;/Users/ozitommi/Documents/MATLAB/Higher Order Sychronization/algebraic_constraints_22-10-2023/s3.m&lt;/file&gt;&lt;/primarySourceFiles&gt;&lt;fixedPointSourceFiles/&gt;&lt;fixedPointSourceRegistered&gt;false&lt;/fixedPointSourceRegistered&gt;&lt;fixedPointSourceSelected&gt;false&lt;/fixedPointSourceSelected&gt;&lt;/sourceModel&gt;</var.sourceSetState>
+    <var.lastUserSourceChecksum>&lt;?xml version="1.0" encoding="UTF-8" standalone="yes"?&gt;&lt;checksum&gt;&lt;includedFiles&gt;&lt;file&gt;/Users/ozitommi/Documents/MATLAB/Higher Order Sychronization/algebraic_constraints_23-10-2023/algebraic-common-lines/ADMM.m&lt;/file&gt;&lt;file&gt;/Users/ozitommi/Documents/MATLAB/Higher Order Sychronization/algebraic_constraints_23-10-2023/algebraic-common-lines/IRLS.m&lt;/file&gt;&lt;file&gt;/Users/ozitommi/Documents/MATLAB/Higher Order Sychronization/algebraic_constraints_23-10-2023/algebraic-common-lines/checkQuadrics.m&lt;/file&gt;&lt;file&gt;/Users/ozitommi/Documents/MATLAB/Higher Order Sychronization/algebraic_constraints_23-10-2023/algebraic-common-lines/constructDetMats.m&lt;/file&gt;&lt;file&gt;/Users/ozitommi/Documents/MATLAB/Higher Order Sychronization/algebraic_constraints_23-10-2023/algebraic-common-lines/constructScaleMats.m&lt;/file&gt;&lt;file&gt;/Users/ozitommi/Documents/MATLAB/Higher Order Sychronization/algebraic_constraints_23-10-2023/algebraic-common-lines/estimate_W.m&lt;/file&gt;&lt;file&gt;/Users/ozitommi/Documents/MATLAB/Higher Order Sychronization/algebraic_constraints_23-10-2023/algebraic-common-lines/eval_obj.m&lt;/file&gt;&lt;file&gt;/Users/ozitommi/Documents/MATLAB/Higher Order Sychronization/algebraic_constraints_23-10-2023/algebraic-common-lines/runADMM.m&lt;/file&gt;&lt;file&gt;/Users/ozitommi/Documents/MATLAB/Higher Order Sychronization/algebraic_constraints_23-10-2023/algebraic-common-lines/s3.m&lt;/file&gt;&lt;/includedFiles&gt;&lt;value&gt;2040355329&lt;/value&gt;&lt;/checksum&gt;</var.lastUserSourceChecksum>
+    <var.sourceSetState>&lt;?xml version="1.0" encoding="UTF-8" standalone="yes"?&gt;&lt;sourceModel&gt;&lt;primarySourceFiles&gt;&lt;file&gt;/Users/ozitommi/Documents/MATLAB/Higher Order Sychronization/algebraic_constraints_23-10-2023/algebraic-common-lines/ADMM.m&lt;/file&gt;&lt;file&gt;/Users/ozitommi/Documents/MATLAB/Higher Order Sychronization/algebraic_constraints_23-10-2023/algebraic-common-lines/IRLS.m&lt;/file&gt;&lt;file&gt;/Users/ozitommi/Documents/MATLAB/Higher Order Sychronization/algebraic_constraints_23-10-2023/algebraic-common-lines/checkQuadrics.m&lt;/file&gt;&lt;file&gt;/Users/ozitommi/Documents/MATLAB/Higher Order Sychronization/algebraic_constraints_23-10-2023/algebraic-common-lines/constructDetMats.m&lt;/file&gt;&lt;file&gt;/Users/ozitommi/Documents/MATLAB/Higher Order Sychronization/algebraic_constraints_23-10-2023/algebraic-common-lines/constructScaleMats.m&lt;/file&gt;&lt;file&gt;/Users/ozitommi/Documents/MATLAB/Higher Order Sychronization/algebraic_constraints_23-10-2023/algebraic-common-lines/estimate_W.m&lt;/file&gt;&lt;file&gt;/Users/ozitommi/Documents/MATLAB/Higher Order Sychronization/algebraic_constraints_23-10-2023/algebraic-common-lines/eval_obj.m&lt;/file&gt;&lt;file&gt;/Users/ozitommi/Documents/MATLAB/Higher Order Sychronization/algebraic_constraints_23-10-2023/algebraic-common-lines/runADMM.m&lt;/file&gt;&lt;file&gt;/Users/ozitommi/Documents/MATLAB/Higher Order Sychronization/algebraic_constraints_23-10-2023/algebraic-common-lines/s3.m&lt;/file&gt;&lt;/primarySourceFiles&gt;&lt;fixedPointSourceFiles/&gt;&lt;fixedPointSourceRegistered&gt;false&lt;/fixedPointSourceRegistered&gt;&lt;fixedPointSourceSelected&gt;false&lt;/fixedPointSourceSelected&gt;&lt;/sourceModel&gt;</var.sourceSetState>
     <param.forceMexBuild>false</param.forceMexBuild>
     <param.NoDefaultJIT>false</param.NoDefaultJIT>
     <param.configImportActive>false</param.configImportActive>
@@ -882,11 +882,11 @@
     </unset>
     <fileset.entrypoints>
       <file custom-data-expanded="false" value="${PROJECT_ROOT}/runADMM.m">
-        <Marker>1697985870456</Marker>
+        <Marker>1698359249624</Marker>
       </file>
     </fileset.entrypoints>
     <fileset.testbench>
-      <file>${PROJECT_ROOT}/clusteringAlgorithm.m</file>
+      <file>${PROJECT_ROOT}/clusteringAlgorithm_synthetic_testing.m</file>
     </fileset.testbench>
     <fileset.inputtypes>
       <file custom-data-expanded="false" value="${PROJECT_ROOT}/runADMM.m">
@@ -900,6 +900,7 @@
             <Field Name="IR_iter" typeId="1" />
             <Field Name="objlp_tol" typeId="1" />
             <Field Name="conv_tol" typeId="1" />
+            <Field Name="norm_tol" typeId="1" />
             <Field Name="MAX_SH" typeId="1" />
             <Field Name="E_est" typeId="3" />
             <Field Name="vld" typeId="1" />
@@ -958,7 +959,7 @@
       </file>
     </fileset.inputtypes>
     <build-deliverables>
-      <file location="${PROJECT_ROOT}/codegen/lib/runADMM" name="runADMM.a" optional="false">/Users/ozitommi/Documents/MATLAB/Higher Order Sychronization/algebraic_constraints_22-10-2023/codegen/lib/runADMM/runADMM.a</file>
+      <file location="${PROJECT_ROOT}/codegen/lib/runADMM" name="runADMM.a" optional="false">/Users/ozitommi/Documents/MATLAB/Higher Order Sychronization/algebraic_constraints_23-10-2023/algebraic-common-lines/codegen/lib/runADMM/runADMM.a</file>
     </build-deliverables>
     <workflow />
     <matlab>

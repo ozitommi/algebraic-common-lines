@@ -27,6 +27,7 @@ void emxCopyStruct_struct0_T(struct0_T *dst, const struct0_T *src)
   dst->IR_iter = src->IR_iter;
   dst->objlp_tol = src->objlp_tol;
   dst->conv_tol = src->conv_tol;
+  dst->norm_tol = src->norm_tol;
   dst->MAX_SH = src->MAX_SH;
   emxCopy_real_T(&dst->E_est, &src->E_est);
   dst->vld = src->vld;
